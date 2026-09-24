@@ -8,9 +8,11 @@
 # No autoinference packages — SGLang is launched directly as a subprocess.
 
 import asyncio
+from collections import deque
 import json
 import os
 import subprocess
+import tempfile
 import time
 
 import aiohttp
@@ -36,6 +38,8 @@ sglang_image = (
         "sed -i 's/timeout_keep_alive=5/timeout_keep_alive=300/g'"
         " /sgl-workspace/sglang/python/sglang/srt/entrypoints/http_server.py"
         " || true",
+        # Modal requires an empty mountpoint. Build time has no mounted volume.
+        "ls -la /root/.cache/huggingface; rm -rf /root/.cache/huggingface",
     )
 )
 
@@ -52,12 +56,10 @@ MODEL_NAME = "nvidia/Kimi-K3-NVFP4"
 SPECULATOR_NAME = "RadixArk/Kimi-K3-DSpark"
 
 # Dedicated volume, pre-populated (1.6 TB) via the download-models function
-# from the previous revision — still valid, mounted at the canonical HF path.
+# from the previous revision — mounted at HF_HOME, with model repos under hub/.
 
 HF_CACHE_PATH = "/root/.cache/huggingface"
-HF_CACHE_VOL = modal.Volume.from_name(
-    "kimi-k3-nvfp4-cache", create_if_missing=True
-)
+HF_CACHE_VOL = modal.Volume.from_name("kimi-k3-nvfp4-cache", create_if_missing=True)
 
 # ## Kernel/compilation artifact cache
 
@@ -70,7 +72,8 @@ DG_CACHE_VOL = modal.Volume.from_name("dg-cache", create_if_missing=True)
 sglang_image = sglang_image.env(
     {
         "HF_HOME": HF_CACHE_PATH,
-        "HF_HUB_CACHE": HF_CACHE_PATH,
+        "HF_HUB_CACHE": f"{HF_CACHE_PATH}/hub",
+        "HF_HUB_OFFLINE": "1",
         "HF_XET_HIGH_PERFORMANCE": "1",
         "SGLANG_DG_CACHE_DIR": DG_CACHE_PATH,
         # Kimi-K3 specifics
@@ -83,21 +86,25 @@ sglang_image = sglang_image.env(
 # ## SGLang server configuration
 
 # DSPARK speculative decoding (cookbook default operating point: block size 7).
-# Drop the three speculative args below to serve without speculation.
+# Drop the speculative config below to serve without speculation.
 
 speculative_config = {
     "speculative-algorithm": "DSPARK",
     "speculative-draft-model-path": SPECULATOR_NAME,
     "speculative-dspark-block-size": 7,
     # Required for spec dec with Kimi-K3's hybrid SSM arch.
-    "enable-linear-replayssm-spec": "",
+    "enable-linear-replayssm-spec": None,
 }
 
+# None means a valueless switch: emit only the flag, never an empty argv element.
 SERVER_ARGS = {
-    "--trust-remote-code": "",
+    "--trust-remote-code": None,
     "--tool-call-parser": "kimi_k3",
     "--reasoning-parser": "kimi_k3",
     "--dcp-size": str(N_GPUS),
+    # RadixArk recipe values for Mamba cache capacity and chunked prefill.
+    "--max-mamba-cache-size": "160",
+    "--chunked-prefill-size": "16384",
     "--mem-fraction-static": "0.85",
     # Required, not optional: flashinfer_cutlass has no SiTU kernel for the
     # routed experts and auto-resolution never picks the TRT-LLM path.
@@ -106,29 +113,68 @@ SERVER_ARGS = {
 
 # ## Infrastructure
 
-REGION = "us-west"
+# Compute region is intentionally unset: Modal schedules the 8xB300 worker
+# in ANY region with capacity (us-west B300s were persistently unavailable).
+# Proxies stay pinned near the users; that is a routing choice, not a
+# scheduling constraint.
 ROUTING_REGION = "us-west"
 MIN_CONTAINERS = int(os.getenv("MIN_CONTAINERS", "0"))  # 1 = always warm
 TARGET_INPUTS = 32
+CUDA_GRAPH_MAX_BS = 32  # Align graph capture with the Modal concurrency target.
 STARTUP_TIMEOUT = 90 * MINUTES  # first boot loads ~1.6 TB from the Volume
 
 
-def check_running(p: subprocess.Popen):
+def build_server_cmd(port):
+    """The exact launch argv shared by GPU startup and CPU verification."""
+    cmd = [
+        "python",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        MODEL_NAME,
+        "--served-model-name",
+        MODEL_NAME,
+        "--host",
+        "0.0.0.0",
+        "--port",
+        str(port),
+        "--tp",  # use all GPUs to split up tensor-parallel operations
+        str(N_GPUS),
+        "--cuda-graph-max-bs",  # only capture CUDA graphs for likely batch sizes
+        str(CUDA_GRAPH_MAX_BS),
+        "--enable-metrics",  # expose metrics endpoints for telemetry
+        "--decode-log-interval",  # how often to log during decoding, in tokens
+        "10",
+    ]
+    for flags in (SERVER_ARGS, speculative_config):
+        for key, value in flags.items():
+            cmd.append("--" + key.removeprefix("--"))
+            if value is not None:
+                cmd.append(str(value))
+    return cmd
+
+
+def check_running(p: subprocess.Popen, stderr=None):
     if (rc := p.poll()) is not None:
-        raise subprocess.CalledProcessError(rc, cmd=p.args)
+        tail = ""
+        if stderr is not None:
+            stderr.seek(0)
+            tail = "".join(deque(stderr, maxlen=50))
+        print(f"SGLang exited with return code {rc}; last 50 stderr lines:\n{tail}", flush=True)
+        raise subprocess.CalledProcessError(rc, cmd=p.args, stderr=tail)
 
 
-def wait_ready(process: subprocess.Popen, timeout: int = 90 * MINUTES):
+def wait_ready(process: subprocess.Popen, timeout: int = 90 * MINUTES, stderr=None):
     import requests
 
     deadline = time.time() + timeout
     while time.time() < deadline:
+        # A dead child is not a transient connection failure: propagate immediately.
+        check_running(process, stderr)
         try:
-            check_running(process)
             requests.get(f"http://127.0.0.1:{PORT}/health").raise_for_status()
             return
         except (
-            subprocess.CalledProcessError,
             requests.exceptions.ConnectionError,
             requests.exceptions.HTTPError,
         ):
@@ -160,7 +206,6 @@ PORT = 8000
     image=sglang_image,
     gpu=GPU,
     volumes={HF_CACHE_PATH: HF_CACHE_VOL, DG_CACHE_PATH: DG_CACHE_VOL},
-    compute_region=REGION,
     min_containers=MIN_CONTAINERS,
     startup_timeout=STARTUP_TIMEOUT,
     port=PORT,  # wrapped code must listen on this port
@@ -173,36 +218,11 @@ class SGLang:
     @modal.enter()
     def startup(self):
         """Start the SGLang server, block until healthy, then warm it up."""
-        cmd = [
-            "python",
-            "-m",
-            "sglang.launch_server",
-            "--model-path",
-            MODEL_NAME,
-            "--served-model-name",
-            MODEL_NAME,
-            "--host",
-            "0.0.0.0",
-            "--port",
-            f"{PORT}",
-            "--tp",  # use all GPUs to split up tensor-parallel operations
-            f"{N_GPUS}",
-            "--cuda-graph-max-bs",  # only capture CUDA graphs for likely batch sizes
-            f"{TARGET_INPUTS * 2}",
-            "--enable-metrics",  # expose metrics endpoints for telemetry
-            "--decode-log-interval",  # how often to log during decoding, in tokens
-            "10",
-        ]
-
-        cmd += [
-            item for k, v in SERVER_ARGS.items() for item in (k, str(v))
-        ]
-        cmd += [  # add speculative config
-            item for k, v in speculative_config.items() for item in (f"--{k}", str(v))
-        ]
-
-        self.process = subprocess.Popen(cmd, env=os.environ)
-        wait_ready(self.process)
+        cmd = build_server_cmd(PORT)
+        # A file avoids pipe backpressure while retaining diagnostics if startup dies.
+        with tempfile.TemporaryFile(mode="w+", encoding="utf-8", errors="replace") as stderr:
+            self.process = subprocess.Popen(cmd, env=os.environ, stderr=stderr)
+            wait_ready(self.process, stderr=stderr)
         warmup()
 
     @modal.exit()
@@ -210,14 +230,84 @@ class SGLang:
         self.process.terminate()
 
 
+# ## CPU-only argv check: modal run serve.py::verify
+
+
+@app.function(
+    image=sglang_image,
+    gpu=None,
+    cpu=1,
+    memory=2048,
+    volumes={HF_CACHE_PATH: HF_CACHE_VOL, DG_CACHE_PATH: DG_CACHE_VOL},
+    timeout=10 * MINUTES,
+)
+def check_argv():
+    cmd = build_server_cmd(PORT)
+    print("Launch argv:", json.dumps(cmd), flush=True)
+    started = time.monotonic()
+    timed_out = False
+    returncode = None
+    # Merge stdout/stderr so config dumps on either stream count as evidence.
+    with tempfile.TemporaryFile(mode="w+", encoding="utf-8", errors="replace") as output:
+        try:
+            result = subprocess.run(
+                cmd, env=os.environ, stdout=output, stderr=subprocess.STDOUT,
+                timeout=3 * MINUTES,
+            )
+            returncode = result.returncode
+        except subprocess.TimeoutExpired:
+            timed_out = True  # subprocess.run kills and reaps the child.
+        output.seek(0)
+        logs = output.read()
+
+    lines = logs.splitlines()
+    # Be conservative: imports can fail BEFORE argparse, especially without CUDA.
+    # SGLang's resolved ServerArgs dump is positive evidence parsing completed.
+    evidence = [line for line in lines if "server_args=ServerArgs(" in line]
+    if returncode == 2 or any(
+        marker in logs.lower()
+        for marker in ("usage:", "error: unrecognized arguments", "error: argument")
+    ):
+        verdict = "FAIL"
+        print(logs, flush=True)
+    elif timed_out:
+        verdict = "INCONCLUSIVE"
+    elif evidence:
+        verdict = "PASS"
+    else:
+        verdict = "INCONCLUSIVE"
+
+    if verdict != "FAIL":
+        print("First 50 output lines:\n" + "\n".join(lines[:50]), flush=True)
+        for line in evidence:
+            print("Resolved args evidence:", line, flush=True)
+    summary = {
+        "verdict": verdict,
+        "returncode": returncode,
+        "timed_out": timed_out,
+        "seconds": round(time.monotonic() - started, 2),
+        "scope": "argv only; not weight loading, kernels, or serving",
+    }
+    print(json.dumps(summary), flush=True)
+    return summary
+
+
+@app.local_entrypoint()
+def verify():
+    result = check_argv.remote()
+    print("CPU argv verification:", json.dumps(result))
+    if result["verdict"] == "FAIL":
+        raise RuntimeError("SGLang rejected the launch argv; see output above")
+
+
 # ## Test the server
 
-# Run with `modal run serve.py` — spins up a fresh replica and streams a
+# Run with `modal run serve.py::test` — spins up a fresh replica and streams a
 # couple of test completions from your local machine.
 
 
 @app.local_entrypoint()
-async def test(test_timeout=10 * MINUTES, prompt=None, twice=True):
+async def test(test_timeout: int = 10 * MINUTES, prompt: str | None = None, twice: bool = True):
     url = await SGLang.get_url.aio()
 
     system_prompt = {
