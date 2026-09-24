@@ -1,0 +1,23 @@
+✓ Initialized. View run at 
+https://modal.com/apps/aviralmansingka/main/ap-7USPrWFTDjkY6E36M90p82
+✓ Created objects.
+├── 🔨 Created mount /Users/aviral/kimi-endpoint/serve.py
+├── 🔨 Created function SGLang.
+├── 🔨 Created function check_argv.
+└── 🔨 Created flash service endpoint for SGLang => 
+    https://aviralmansingka--kimi-k3-sglang-dev.us-west.modal.direct
+Stopping app - uncaught exception raised locally: TypeError("unsupported operand type(s) for +: 'float' and 'str'").
+╭───────────────────── Traceback (most recent call last) ──────────────────────╮
+│ /Users/aviral/kimi-endpoint/serve.py:325 in test                             │
+│                                                                              │
+│   324 │                                                                      │
+│ ❱ 325 │   await probe(url, messages, timeout=test_timeout)                   │
+│   326 │   if twice:                                                          │
+│                                                                              │
+│ /Users/aviral/kimi-endpoint/serve.py:342 in probe                            │
+│                                                                              │
+│   341 │   headers = {"Modal-Session-ID": client_id}                          │
+│ ❱ 342 │   deadline = time.time() + timeout                                   │
+│   343 │   async with aiohttp.ClientSession(base_url=url, headers=headers) as │
+╰──────────────────────────────────────────────────────────────────────────────╯
+TypeError: unsupported operand type(s) for +: 'float' and 'str'

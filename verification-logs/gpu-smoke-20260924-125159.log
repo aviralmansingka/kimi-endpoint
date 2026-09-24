@@ -1,0 +1,80 @@
+✓ Initialized. View run at 
+https://modal.com/apps/aviralmansingka/main/ap-0Jo3UmnSvqoclWl7eTv4nO
+✓ Created objects.
+├── 🔨 Created mount /Users/aviral/kimi-endpoint/serve.py
+├── 🔨 Created function SGLang.
+├── 🔨 Created function check_argv.
+└── 🔨 Created flash service endpoint for SGLang => 
+    https://aviralmansingka--kimi-k3-sglang-dev.us-west.modal.direct
+/Users/aviral/kimi-endpoint/_gpu_smoke_verify.py:6: AsyncUsageWarning: A blocking Modal interface is being used in an async context.
+
+This may cause performance issues or bugs. Consider rewriting to use Modal's async interfaces:
+https://modal.com/docs/guide/async
+
+Suggested rewrite:
+  await ...__call__.aio(...)
+
+Original line:
+  await test(test_timeout=5400)
+Stopping app - uncaught exception raised locally: ServerDisconnectedError('Server disconnected').
+╭───────────────────── Traceback (most recent call last) ──────────────────────╮
+│ /Users/aviral/kimi-endpoint/_gpu_smoke_verify.py:6 in smoke                  │
+│                                                                              │
+│   5 async def smoke():                                                       │
+│ ❱ 6 │   await test(test_timeout=5400)                                        │
+│   7                                                                          │
+│                                                                              │
+│ /Users/aviral/kimi-endpoint/serve.py:325 in test                             │
+│                                                                              │
+│   324 │                                                                      │
+│ ❱ 325 │   await probe(url, messages, timeout=test_timeout)                   │
+│   326 │   if twice:                                                          │
+│                                                                              │
+│ /Users/aviral/kimi-endpoint/serve.py:346 in probe                            │
+│                                                                              │
+│   345 │   │   │   try:                                                       │
+│ ❱ 346 │   │   │   │   await _send_request_streaming(session, messages)       │
+│   347 │   │   │   │   return                                                 │
+│                                                                              │
+│ /Users/aviral/kimi-endpoint/serve.py:364 in _send_request_streaming          │
+│                                                                              │
+│   363 │                                                                      │
+│ ❱ 364 │   async with session.post(                                           │
+│   365 │   │   "/v1/chat/completions", json=payload, headers=headers, timeout │
+│                                                                              │
+│ /Users/aviral/.local/share/uv/tools/modal/lib/python3.12/site-packages/aioht │
+│ tp/client.py:1693 in __aenter__                                              │
+│                                                                              │
+│   1692 │   async def __aenter__(self) -> _RetType_co:                        │
+│ ❱ 1693 │   │   self._resp: _RetType_co = await self._coro                    │
+│   1694 │   │   return await self._resp.__aenter__()  # type: ignore[return-v │
+│                                                                              │
+│ /Users/aviral/.local/share/uv/tools/modal/lib/python3.12/site-packages/aioht │
+│ tp/client.py:858 in _request                                                 │
+│                                                                              │
+│    857 │   │   │   │   │   try:                                              │
+│ ❱  858 │   │   │   │   │   │   resp = await handler(req)                     │
+│    859 │   │   │   │   │   # Client connector errors should not be retried   │
+│                                                                              │
+│ /Users/aviral/.local/share/uv/tools/modal/lib/python3.12/site-packages/aioht │
+│ tp/client.py:836 in _connect_and_send_request                                │
+│                                                                              │
+│    835 │   │   │   │   │   │   │   try:                                      │
+│ ❱  836 │   │   │   │   │   │   │   │   await resp.start(conn)                │
+│    837 │   │   │   │   │   │   │   except BaseException:                     │
+│                                                                              │
+│ /Users/aviral/.local/share/uv/tools/modal/lib/python3.12/site-packages/aioht │
+│ tp/client_reqrep.py:558 in start                                             │
+│                                                                              │
+│    557 │   │   │   │   │   protocol = self._protocol                         │
+│ ❱  558 │   │   │   │   │   message, payload = await protocol.read()  # type: │
+│    559 │   │   │   │   except http.HttpProcessingError as exc:               │
+│                                                                              │
+│ /Users/aviral/.local/share/uv/tools/modal/lib/python3.12/site-packages/aioht │
+│ tp/streams.py:705 in read                                                    │
+│                                                                              │
+│   704 │   │   │   try:                                                       │
+│ ❱ 705 │   │   │   │   await self._waiter                                     │
+│   706 │   │   │   except (asyncio.CancelledError, asyncio.TimeoutError):     │
+╰──────────────────────────────────────────────────────────────────────────────╯
+ServerDisconnectedError: Server disconnected

@@ -1,0 +1,497 @@
+✓ Initialized. View run at 
+https://modal.com/apps/aviralmansingka/main/ap-Eb9ckoppWNvvPbDlUWiWlT
+Building image im-HKRpw5Vd6TZMHyDLKl39ot
+
+=> Step 0: FROM base
+
+=> Step 1: ENV HF_HOME=/root/.cache/huggingface
+
+=> Step 2: ENV HF_HUB_CACHE=/root/.cache/huggingface/hub
+
+=> Step 3: ENV HF_HUB_OFFLINE=1
+
+=> Step 4: ENV HF_XET_HIGH_PERFORMANCE=1
+
+=> Step 5: ENV SGLANG_DG_CACHE_DIR=/root/dg-cache
+
+=> Step 6: ENV SGLANG_ALLOW_OVERWRITE_LONGER_CONTEXT_LEN=1
+
+=> Step 7: ENV SGLANG_DISABLE_CUDNN_CHECK=1
+
+=> Step 8: ENV SGLANG_ENABLE_SPEC_V2=1
+Saving image...
+Image saved, took 4.19s
+
+Built image im-HKRpw5Vd6TZMHyDLKl39ot in 6.24s
+
+
+✓ Created objects.
+├── 🔨 Created mount /Users/aviral/kimi-endpoint/_verify_resolution.py
+├── 🔨 Created mount PythonPackage:serve
+└── 🔨 Created function verify.
+ROOT ['.agent_harnesses.json', '.check_for_skill_update_done', '.check_for_update_done', 'hub', 'xet']
+HUB ['.locks', 'CACHEDIR.TAG', 'blobs', 'models--RadixArk--Kimi-K3-DSpark', 'models--nvidia--Kimi-K3-NVFP4']
+TEST /root/.cache/huggingface exit 0 ENV /root/.cache/huggingface /root/.cache/huggingface OFFLINE True
+FILE nvidia/Kimi-K3-NVFP4 config.json None
+FILE nvidia/Kimi-K3-NVFP4 tokenizer_config.json None
+FILE nvidia/Kimi-K3-NVFP4 tiktoken.model None
+FILE nvidia/Kimi-K3-NVFP4 tokenization_kimi.py None
+ERROR nvidia/Kimi-K3-NVFP4 LocalEntryNotFoundError Cannot find an appropriate cached snapshot folder for the specified revision on the local disk and outgoing traffic has been disabled. To enable repo look-ups and downloads online, pass 'local_files_only=False' as input.
+FILE RadixArk/Kimi-K3-DSpark config.json None
+FILE RadixArk/Kimi-K3-DSpark model.safetensors None
+ERROR RadixArk/Kimi-K3-DSpark LocalEntryNotFoundError Cannot find an appropriate cached snapshot folder for the specified revision on the local disk and outgoing traffic has been disabled. To enable repo look-ups and downloads online, pass 'local_files_only=False' as input.
+ 
+TEST /root/.cache/huggingface/hub exit 0 ENV /root/.cache/huggingface /root/.cache/huggingface/hub OFFLINE True
+FILE nvidia/Kimi-K3-NVFP4 config.json '/root/.cache/huggingface/hub/models--nvidia--Kimi-K3-NVFP4/snapshots/b2428a0b83a8b712ff2e1a8448a103d4175341f1/config.json'
+FILE nvidia/Kimi-K3-NVFP4 tokenizer_config.json '/root/.cache/huggingface/hub/models--nvidia--Kimi-K3-NVFP4/snapshots/b2428a0b83a8b712ff2e1a8448a103d4175341f1/tokenizer_config.json'
+FILE nvidia/Kimi-K3-NVFP4 tiktoken.model '/root/.cache/huggingface/hub/models--nvidia--Kimi-K3-NVFP4/snapshots/b2428a0b83a8b712ff2e1a8448a103d4175341f1/tiktoken.model'
+FILE nvidia/Kimi-K3-NVFP4 tokenization_kimi.py '/root/.cache/huggingface/hub/models--nvidia--Kimi-K3-NVFP4/snapshots/b2428a0b83a8b712ff2e1a8448a103d4175341f1/tokenization_kimi.py'
+SNAPSHOT nvidia/Kimi-K3-NVFP4 /__modal/volumes/vo-8MZo6KagmtpHw4PuRzDb4O/hub/models--nvidia--Kimi-K3-NVFP4/snapshots/b2428a0b83a8b712ff2e1a8448a103d4175341f1
+FILE RadixArk/Kimi-K3-DSpark config.json '/root/.cache/huggingface/hub/models--RadixArk--Kimi-K3-DSpark/snapshots/3c5bac301d9cf392706189d82ed947feca6c2f0f/config.json'
+FILE RadixArk/Kimi-K3-DSpark model.safetensors '/root/.cache/huggingface/hub/models--RadixArk--Kimi-K3-DSpark/snapshots/3c5bac301d9cf392706189d82ed947feca6c2f0f/model.safetensors'
+SNAPSHOT RadixArk/Kimi-K3-DSpark /__modal/volumes/vo-8MZo6KagmtpHw4PuRzDb4O/hub/models--RadixArk--Kimi-K3-DSpark/snapshots/3c5bac301d9cf392706189d82ed947feca6c2f0f
+ 
+SOURCE srt/model_loader/weight_utils.py 328     if not is_local:
+        # Download the config files.
+        with get_lock(model_name_or_path, load_config.download_dir):
+            hf_folder = snapshot_download(
+                model_name_or_path,
+                revision=model_config.revision,
+                allow_patterns="*.json",
+SOURCE srt/model_loader/weight_utils.py 329         # Download the config files.
+        with get_lock(model_name_or_path, load_config.download_dir):
+            hf_folder = snapshot_download(
+                model_name_or_path,
+                revision=model_config.revision,
+                allow_patterns="*.json",
+                cache_dir=load_config.download_dir,
+SOURCE srt/model_loader/weight_utils.py 333                 revision=model_config.revision,
+                allow_patterns="*.json",
+                cache_dir=load_config.download_dir,
+                local_files_only=huggingface_hub.constants.HF_HUB_OFFLINE,
+                tqdm_class=DisabledTqdm,
+            )
+    else:
+SOURCE srt/model_loader/weight_utils.py 334                 allow_patterns="*.json",
+                cache_dir=load_config.download_dir,
+                local_files_only=huggingface_hub.constants.HF_HUB_OFFLINE,
+                tqdm_class=DisabledTqdm,
+            )
+    else:
+        hf_folder = model_name_or_path
+SOURCE srt/model_loader/weight_utils.py 338             )
+    else:
+        hf_folder = model_name_or_path
+
+    possible_config_filenames = quant_cls.get_config_filenames()
+
+    # If the quantization config is not found, use the default config.
+SOURCE srt/model_loader/weight_utils.py 353             # hf_quant_config.json; others duplicate it in config.json. Read
+            # hf_quant_config.json first when present and FP4-typed.
+            modelopt_quant_path = os.path.join(hf_folder, "hf_quant_config.json")
+            if os.path.isfile(modelopt_quant_path):
+                with open(modelopt_quant_path) as f:
+                    raw_quant_config = json.load(f)
+                source_quant = raw_quant_config.get("quantization", raw_quant_config)
+SOURCE srt/model_loader/weight_utils.py 375         return quant_cls()
+
+    config_files = glob.glob(os.path.join(hf_folder, "*.json"))
+
+    quant_config_files = [
+        f for f in config_files if any(f.endswith(x) for x in possible_config_filenames)
+    ]
+SOURCE srt/model_loader/weight_utils.py 573                 f"Will download missing files.",
+            )
+            return None  # Triggers snapshot_download() which handles partial downloads
+
+    # Only perform cache validation and cleanup in CI to avoid
+    # unnecessary overhead for regular users
+    if is_in_ci() and local_weight_files:
+SOURCE srt/model_loader/weight_utils.py 648         # In CI, skip HF API calls if we're in offline mode or want to avoid rate limits
+        # But we already checked for local cache above, so if we're here we need to download
+        if not huggingface_hub.constants.HF_HUB_OFFLINE:
+            # Before we download we look at what is available:
+            fs = HfFileSystem()
+            file_list = fs.ls(model_name_or_path, detail=False, revision=revision)
+
+SOURCE srt/model_loader/weight_utils.py 664         if not is_in_ci():
+            # Simple download without validation for non-CI environments
+            hf_folder = snapshot_download(
+                model_name_or_path,
+                allow_patterns=allow_patterns,
+                ignore_patterns=ignore_patterns,
+                cache_dir=cache_dir,
+SOURCE srt/model_loader/weight_utils.py 671                 tqdm_class=DisabledTqdm,
+                revision=revision,
+                local_files_only=huggingface_hub.constants.HF_HUB_OFFLINE,
+            )
+            return hf_folder
+        else:
+            # Only perform validation and retry in CI to avoid overhead for regular users
+SOURCE srt/model_loader/weight_utils.py 673                 local_files_only=huggingface_hub.constants.HF_HUB_OFFLINE,
+            )
+            return hf_folder
+        else:
+            # Only perform validation and retry in CI to avoid overhead for regular users
+            return ci_download_with_validation_and_retry(
+                model_name_or_path=model_name_or_path,
+SOURCE srt/model_loader/weight_utils.py 710                 cache_dir=cache_dir,
+                revision=revision,
+                local_files_only=huggingface_hub.constants.HF_HUB_OFFLINE,
+            )
+        # If file not found on remote or locally, we should not fail since
+        # only some models will have index_file.
+        except huggingface_hub.utils.EntryNotFoundError:
+SOURCE srt/model_loader/weight_utils.py 726 # look up which safetensors files should be used.
+def filter_duplicate_safetensors_files(
+    hf_weights_files: List[str], hf_folder: str, index_file: str
+) -> List[str]:
+    # model.safetensors.index.json is a mapping from keys in the
+    # torch state_dict to safetensors file holding that weight.
+    index_file_name = os.path.join(hf_folder, index_file)
+SOURCE srt/model_loader/weight_utils.py 730     # model.safetensors.index.json is a mapping from keys in the
+    # torch state_dict to safetensors file holding that weight.
+    index_file_name = os.path.join(hf_folder, index_file)
+    if not os.path.isfile(index_file_name):
+        # NOTE: this is a trick of handling mistral model
+        # skip the unsupported consolidated.safetensors file
+        if len(hf_weights_files) == 2:
+SOURCE srt/model_loader/weight_utils.py 748     weight_files_in_index = set()
+    for weight_name in weight_map:
+        weight_files_in_index.add(os.path.join(hf_folder, weight_map[weight_name]))
+    # Fail fast if the index references shard files that are not on disk (e.g. an
+    # incomplete or interrupted download). Otherwise those shards are silently
+    # dropped and the model loads with uninitialized weights.
+    missing_files = sorted(f for f in weight_files_in_index if not os.path.isfile(f))
+SOURCE srt/model_loader/weight_utils.py 756         raise RuntimeError(
+            f"{index_file} references {len(missing_files)} shard file(s) missing "
+            f"from {hf_folder} (incomplete download?): "
+            f"{[os.path.basename(f) for f in missing_files]}"
+        )
+    # Filter out any fields that are not found in the index file.
+    hf_weights_files = [f for f in hf_weights_files if f in weight_files_in_index]
+SOURCE srt/model_loader/weight_utils.py 765 
+def maybe_add_mtp_safetensors(
+    hf_weights_files: List[str], hf_folder: str, index_file: str, hf_config
+) -> List[str]:
+    """
+    Auto-detect and add mtp.safetensors for GLM4Moe MTP/NextN models if:
+    1. mtp.safetensors exists in the model directory
+SOURCE srt/model_loader/weight_utils.py 797 
+    # Check if mtp.safetensors exists and is not already in the file list
+    mtp_path = os.path.join(hf_folder, "mtp.safetensors")
+    if not os.path.isfile(mtp_path) or mtp_path in hf_weights_files:
+        return hf_weights_files
+
+    # mtp.safetensors exists but not in index - this is a bug
+SOURCE srt/model_loader/weight_utils.py 834     model_name_or_path: str,
+    cache_dir: Optional[str],
+    hf_folder: str,
+    hf_weights_files: List[str],
+) -> Generator[Tuple[str, torch.Tensor], None, None]:
+    """Iterate over the weights in the model np files.
+
+SOURCE srt/model_loader/weight_utils.py 846     # Convert the model weights from torch tensors to numpy arrays for
+    # faster loading.
+    np_folder = os.path.join(hf_folder, "np")
+    os.makedirs(np_folder, exist_ok=True)
+    weight_names_file = os.path.join(np_folder, "weight_names.json")
+    # Use file lock to prevent multiple processes from
+    # dumping the same model weights to numpy at the same time.
+SOURCE srt/model_loader/loader.py 421 
+        source: DefaultModelLoader.Source
+        hf_folder: str
+        weight_files: Tuple[str, ...]
+        use_safetensors: bool
+
+    counter_before_loading_weights: float = 0.0
+SOURCE srt/model_loader/loader.py 463 
+            if not os.path.exists(model):
+                model_path = snapshot_download(
+                    model_id=model,
+                    cache_dir=self.load_config.download_dir,
+                    local_files_only=huggingface_hub.constants.HF_HUB_OFFLINE,
+                    revision=revision,
+SOURCE srt/model_loader/loader.py 465                 model_path = snapshot_download(
+                    model_id=model,
+                    cache_dir=self.load_config.download_dir,
+                    local_files_only=huggingface_hub.constants.HF_HUB_OFFLINE,
+                    revision=revision,
+                    ignore_file_pattern=self.load_config.ignore_patterns,
+                )
+Stopping app - local entrypoint completed.
+SOURCE srt/model_loader/loader.py 466                     model_id=model,
+                    cache_dir=self.load_config.download_dir,
+                    local_files_only=huggingface_hub.constants.HF_HUB_OFFLINE,
+                    revision=revision,
+                    ignore_file_pattern=self.load_config.ignore_patterns,
+                )
+            else:
+SOURCE srt/model_loader/loader.py 517 
+        if not is_local:
+            hf_folder = download_weights_from_hf(
+                model_name_or_path,
+                self.load_config.download_dir,
+                allow_patterns,
+                revision,
+SOURCE srt/model_loader/loader.py 519             hf_folder = download_weights_from_hf(
+                model_name_or_path,
+                self.load_config.download_dir,
+                allow_patterns,
+                revision,
+                ignore_patterns=self.load_config.ignore_patterns,
+            )
+SOURCE srt/model_loader/loader.py 525             )
+        else:
+            hf_folder = model_name_or_path
+
+        server_args = get_server_args()
+        if server_args and get_model().model_checksum is not None:
+            from sglang.srt.utils.model_file_verifier import verify
+SOURCE srt/model_loader/loader.py 532 
+            checksums_source = get_model().model_checksum or model_name_or_path
+            verify(model_path=hf_folder, checksums_source=checksums_source)
+
+        hf_weights_files: List[str] = []
+        for pattern in allow_patterns:
+            hf_weights_files += glob.glob(os.path.join(hf_folder, pattern))
+SOURCE srt/model_loader/loader.py 536         hf_weights_files: List[str] = []
+        for pattern in allow_patterns:
+            hf_weights_files += glob.glob(os.path.join(hf_folder, pattern))
+            if len(hf_weights_files) > 0:
+                if pattern == "*.safetensors":
+                    use_safetensors = True
+                break
+SOURCE srt/model_loader/loader.py 552                     model_name_or_path,
+                    index_file,
+                    self.load_config.download_dir,
+                    revision,
+                )
+            hf_weights_files = filter_duplicate_safetensors_files(
+                hf_weights_files, hf_folder, index_file
+SOURCE srt/model_loader/loader.py 556                 )
+            hf_weights_files = filter_duplicate_safetensors_files(
+                hf_weights_files, hf_folder, index_file
+            )
+        else:
+            hf_weights_files = filter_files_not_needed_for_inference(hf_weights_files)
+
+SOURCE srt/model_loader/loader.py 583                     hf_weights_files = staggered
+
+        return hf_folder, hf_weights_files, use_safetensors
+
+    def _get_weights_iterator(
+        self,
+        source: Source,
+SOURCE srt/model_loader/loader.py 597         use_multithread = extra_config.get("enable_multithread_load", True)
+        if resolved_source is None:
+            hf_folder, hf_weights_files, use_safetensors = self._prepare_weights(
+                source.model_or_path, source.revision, source.fall_back_to_pt
+            )
+            if use_safetensors and source.model_config is not None:
+                hf_weights_files = maybe_add_mtp_safetensors(
+SOURCE srt/model_loader/loader.py 603                 hf_weights_files = maybe_add_mtp_safetensors(
+                    hf_weights_files,
+                    hf_folder,
+                    "model.safetensors.index.json",
+                    source.model_config.hf_config,
+                )
+        else:
+SOURCE srt/model_loader/loader.py 608                 )
+        else:
+            hf_folder = resolved_source.hf_folder
+            hf_weights_files = list(resolved_source.weight_files)
+            use_safetensors = resolved_source.use_safetensors
+
+        if self.load_config.load_format == LoadFormat.NPCACHE:
+SOURCE srt/model_loader/loader.py 617             weights_iterator = np_cache_weights_iterator(
+                source.model_or_path,
+                self.load_config.download_dir,
+                hf_folder,
+                hf_weights_files,
+            )
+        elif use_safetensors:
+SOURCE srt/model_loader/loader.py 618                 source.model_or_path,
+                self.load_config.download_dir,
+                hf_folder,
+                hf_weights_files,
+            )
+        elif use_safetensors:
+            weight_loader_disable_mmap = get_model().weight_loader_disable_mmap
+SOURCE srt/model_loader/loader.py 762         resolved_sources = []
+        for source in sources:
+            hf_folder, weight_files, use_safetensors = self._prepare_weights(
+                source.model_or_path,
+                source.revision,
+                source.fall_back_to_pt,
+            )
+SOURCE srt/model_loader/loader.py 770                 weight_files = maybe_add_mtp_safetensors(
+                    weight_files,
+                    hf_folder,
+                    "model.safetensors.index.json",
+                    source.model_config.hf_config,
+                )
+            resolved_sources.append(
+SOURCE srt/model_loader/loader.py 777                 DefaultModelLoader.ResolvedSource(
+                    source=source,
+                    hf_folder=hf_folder,
+                    weight_files=tuple(weight_files),
+                    use_safetensors=use_safetensors,
+                )
+            )
+SOURCE srt/model_loader/loader.py 904                 model_config.model_path,
+                trust_remote_code=True,
+                local_files_only=huggingface_hub.constants.HF_HUB_OFFLINE,
+            )
+        except (KeyError, ValueError):
+            from sglang.srt.utils.hf_transformers_utils import get_config
+
+SOURCE srt/model_loader/loader.py 945             **model_kwargs,
+            trust_remote_code=True,
+            local_files_only=huggingface_hub.constants.HF_HUB_OFFLINE,
+        )
+        # Handle both legacy modelopt_quant and unified quantization flags
+        if hasattr(model_config, "modelopt_quant") and model_config.modelopt_quant:
+            # Legacy approach
+SOURCE srt/model_loader/loader.py 1735             return download_weights_from_hf(
+                model_name_or_path,
+                self.load_config.download_dir,
+                allow_patterns,
+                revision,
+                ignore_patterns=self.load_config.ignore_patterns,
+            )
+SOURCE srt/model_loader/loader.py 2767                 matching_files = fnmatch.filter(repo_files, pattern)
+                if matching_files:
+                    hf_folder = download_weights_from_hf(
+                        model_name_or_path,
+                        self.load_config.download_dir,
+                        [pattern],
+                        revision,
+SOURCE srt/model_loader/loader.py 2769                     hf_folder = download_weights_from_hf(
+                        model_name_or_path,
+                        self.load_config.download_dir,
+                        [pattern],
+                        revision,
+                        ignore_patterns=self.load_config.ignore_patterns,
+                    )
+SOURCE srt/model_loader/loader.py 2774                         ignore_patterns=self.load_config.ignore_patterns,
+                    )
+                    return glob.glob(os.path.join(hf_folder, pattern)), pattern
+
+        raise RuntimeError(f"No model weights found in: `{model_name_or_path}`")
+
+    def _prepare_weights(
+SOURCE srt/model_loader/loader.py 4118         index_file = SAFE_WEIGHTS_INDEX_NAME
+
+        hf_folder = (
+            model_name_or_path
+            if (is_local or is_object_storage_path)
+            else download_weights_from_hf(
+                model_name_or_path,
+SOURCE srt/model_loader/loader.py 4123             else download_weights_from_hf(
+                model_name_or_path,
+                self.load_config.download_dir,
+                [safetensors_pattern],
+                revision,
+                ignore_patterns=self.load_config.ignore_patterns,
+            )
+SOURCE srt/model_loader/loader.py 4135 
+            checksums_source = get_model().model_checksum or model_name_or_path
+            verify(model_path=hf_folder, checksums_source=checksums_source)
+
+        hf_weights_files = list_safetensors(path=hf_folder)
+
+        # For models like Mistral-7B-Instruct-v0.3
+SOURCE srt/model_loader/loader.py 4137             verify(model_path=hf_folder, checksums_source=checksums_source)
+
+        hf_weights_files = list_safetensors(path=hf_folder)
+
+        # For models like Mistral-7B-Instruct-v0.3
+        # there are both sharded safetensors files and a consolidated
+        # safetensors file. Using both breaks.
+SOURCE srt/model_loader/loader.py 4148                 model_name_or_path,
+                index_file,
+                self.load_config.download_dir,
+                revision,
+            )
+        hf_weights_files = filter_duplicate_safetensors_files(
+            hf_weights_files, hf_folder, index_file
+SOURCE srt/model_loader/loader.py 4152             )
+        hf_weights_files = filter_duplicate_safetensors_files(
+            hf_weights_files, hf_folder, index_file
+        )
+
+        if len(hf_weights_files) == 0:
+            raise RuntimeError(
+SOURCE srt/model_loader/loader.py 4160             )
+
+        return hf_folder, hf_weights_files
+
+    def _get_weights_iterator(
+        self, source: Source
+    ) -> Generator[Tuple[str, torch.Tensor], None, None]:
+SOURCE srt/model_loader/loader.py 4170         )
+
+        hf_folder, hf_weights_files = self._prepare_weights(
+            source.model_or_path, source.revision
+        )
+
+        if source.model_config is not None:
+SOURCE srt/model_loader/loader.py 4177             hf_weights_files = maybe_add_mtp_safetensors(
+                hf_weights_files,
+                hf_folder,
+                "model.safetensors.index.json",
+                source.model_config.hf_config,
+            )
+
+SOURCE srt/configs/load_config.py 44 class LoadConfig:
+    """
+    download_dir: Directory to download and load the weights, default to the
+        default cache directory of huggingface.
+    load_format: The format of the model weights to load:
+        "auto" will try to load the weights in the safetensors format and
+            fall back to the pytorch bin format if safetensors format is
+SOURCE srt/configs/load_config.py 73 
+    load_format: Union[str, LoadFormat] = LoadFormat.AUTO
+    download_dir: Optional[str] = None
+    model_loader_extra_config: Optional[Union[str, dict]] = field(default_factory=dict)
+    ignore_patterns: Optional[Union[List[str], str]] = None
+    decryption_key_file: Optional[str] = None
+    decrypt_max_concurrency: int = -1
+SOURCE srt/server_args.py 3266         NS("model"),
+    ] = None
+    download_dir: A[
+        Optional[str], "Model download directory for huggingface.", NS("model")
+    ] = None
+    model_checksum: A[
+        Optional[str],
+SOURCE srt/server_args.py 4299                 return cached
+            # Check user-specified download dir
+            if self.download_dir:
+                alt = os.path.join(self.download_dir, path)
+                if os.path.exists(alt):
+                    return alt
+
+SOURCE srt/server_args.py 4300             # Check user-specified download dir
+            if self.download_dir:
+                alt = os.path.join(self.download_dir, path)
+                if os.path.exists(alt):
+                    return alt
+
+            # Cache miss — download from ModelScope hub
+SOURCE srt/server_args.py 4305 
+            # Cache miss — download from ModelScope hub
+            return ms_snapshot_download(
+                path,
+                cache_dir=self.download_dir,
+                revision=revision,
+                **({"ignore_patterns": ignore_patterns} if ignore_patterns else {}),
+SOURCE srt/server_args.py 4307             return ms_snapshot_download(
+                path,
+                cache_dir=self.download_dir,
+                revision=revision,
+                **({"ignore_patterns": ignore_patterns} if ignore_patterns else {}),
+            )
+
+✓ App completed. View run at 
+https://modal.com/apps/aviralmansingka/main/ap-Eb9ckoppWNvvPbDlUWiWlT

@@ -1,0 +1,24 @@
+Window: 2026-08-25T20:10:00+00:00 — 2026-09-24T20:10:00+00:00
+Analyzed 316 sessions; codex=117, claude=1, pi=198
+| Metric | n | p50 | mean | p90 | p99 | max |
+|---|---:|---:|---:|---:|---:|---:|
+| prefix_text_system_plus_first_user | 316 | 2,568 | 5,986 | 13,772 | 22,086 | 25,302 |
+| initial_recorded_text_context | 316 | 3,195 | 7,581 | 21,235 | 24,898 | 32,668 |
+| first_request_input_real | 315 | 10,664 | 11,642 | 22,264 | 36,412 | 217,628 |
+| turns_per_session | 316 | 12 | 36 | 98 | 297 | 624 |
+| new_input_estimated | 11019 | 356 | 1,266 | 2,983 | 13,436 | 106,416 |
+| new_input_excluding_args_estimated | 11019 | 150 | 1,085 | 2,698 | 13,238 | 106,395 |
+| tool_output_per_turn_estimated | 11019 | 129 | 1,045 | 2,511 | 13,211 | 106,395 |
+| output_real | 11334 | 243 | 537 | 1,201 | 4,894 | 20,223 |
+| output_real_or_estimated | 11335 | 243 | 539 | 1,203 | 4,897 | 24,690 |
+| assistant_text_only_estimated | 11335 | 8 | 50 | 94 | 576 | 24,671 |
+| input_per_request_real | 11334 | 81,104 | 104,197 | 215,180 | 417,618 | 464,093 |
+| total_session_input_real | 315 | 331,428 | 3,749,105 | 9,556,977 | 58,145,816 | 164,564,118 |
+| total_session_output_real | 315 | 5,695 | 19,315 | 50,354 | 190,611 | 311,144 |
+| cached_fraction_per_turn | 11334 | 0.989 | 0.912 | 0.998 | 0.999 | 1.000 |
+| reasoning_fraction_per_turn | 11334 | 0.196 | 0.293 | 0.783 | 0.952 | 0.995 |
+| parallel_tool_batch_width | 1774 | 3 | 3 | 4 | 7 | 10 |
+| subagent_calls_per_session_positive | 27 | 2 | 3 | 6 | 7 | 7 |
+| subagent_calls_per_response_positive | 59 | 1 | 1 | 2 | 3 | 3 |
+Concurrency: {"active_hours": 122, "distinct_sessions_per_active_hour": {"n": 122, "p50": 2, "mean": 4.286885245901639, "p90": 11, "p99": 25, "max": 25}, "distinct_sessions_per_all_hours": {"n": 721, "p50": 0, "mean": 0.7253814147018031, "p90": 2, "p99": 14, "max": 25}, "distinct_sessions_per_active_minute": {"n": 1694, "p50": 1, "mean": 1.667650531286895, "p90": 3, "p99": 6, "max": 8}, "five_minute_idle_split_overlap": {"active_seconds": 103353.20000219345, "p50": 1, "mean": 1.6590050331915471, "p90": 3, "p99": 5, "max": 7}, "pi_timestamp_inflight_overlap": {"active_seconds": 57558.09800243378, "p50": 1, "mean": 1.2686593988622674, "p90": 2, "p99": 4, "max": 6}, "pi_response_seconds": {"n": 10114, "p50": 4.674999952316284, "mean": 7.219855844514842, "p90": 14.041999816894531, "p99": 40.96600008010864, "max": 1163.3140001296997}}
+Audit: {"codex_files_discovered": 676, "codex_files_with_window_records": 125, "codex_repeated_or_empty_token_count": 15, "claude_files_discovered": 4, "claude_non_model_errors": 2, "claude_files_with_window_records": 3, "claude_merged_response_records": 1, "pi_files_discovered": 1731, "pi_non_model_errors": 141, "pi_files_with_window_records": 202, "pi_cross_file_duplicate_responses": 84}

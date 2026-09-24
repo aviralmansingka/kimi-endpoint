@@ -1,0 +1,4 @@
+Self-test passed: zeros, cache normalization, Codex checkpoints/tool-only turns, Claude split records.
+Full-data invariants passed; response IDs deduplicated, cache/reasoning bounded, Codex totals reconciled.
+Recommended dry-run validated: 24 model turns plus system prefix; concurrency=2; no 100-request truncation.
+No live network benchmark was run; serve.py and harness files were not modified by this task.
