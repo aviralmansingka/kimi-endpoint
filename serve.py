@@ -1,147 +1,97 @@
-"""Kimi-K3 inference endpoint on Modal (single-file).
+# Kimi-K3 on Modal with SGLang — low-latency `@app.server` structure.
 
-Adapted from the autoinference serve template, updated for Kimi-K3 per
-nvidia/Kimi-K3-NVFP4's validated SGLang recipe (8xB300, DSPARK speculation):
-https://huggingface.co/nvidia/Kimi-K3-NVFP4
+# Serves nvidia/Kimi-K3-NVFP4 with the DSPARK speculative decoder, using the
+# validated 8xB300 recipe from the model card:
+#   https://huggingface.co/nvidia/Kimi-K3-NVFP4
+# Weights are pre-fetched into a dedicated Modal Volume (kimi-k3-nvfp4-cache),
+# so server boots load from the Volume instead of the Hub.
+# No autoinference packages — SGLang is launched directly as a subprocess.
 
-Deploy (scale-to-zero):
-    uv run modal deploy serve.py
-
-Keep one container always warm:
-    MIN_CONTAINERS=1 uv run modal deploy serve.py
-
-Notes:
-- First boot downloads ~1.6 TB of weights into the `kimi-k3-nvfp4-cache`
-  volume mounted at the canonical HF cache path (`/root/.cache/huggingface`);
-  startup can take an hour or more. Later boots reuse the volume.
-  Skip the GPU-hour burn by pre-fetching on CPU instead:
-      uv run modal run serve.py::download-models
-- Requires the `lmsysorg/sglang:dev-dev-kimi-k3-nvfp4` image (CUDA 13 build
-  from SGLang PR #35077) — released SGLang cannot load this checkpoint yet.
-- Drop the three DSPARK `--speculative-*` args to serve without speculation.
-"""
-
+import asyncio
+import json
 import os
-import re
 import subprocess
-import threading
+import time
 
-# /// script
-# requires-python = ">=3.11"
-# dependencies = ["modal>=1.5.5"]
-# ///
+import aiohttp
 import modal
-import modal.experimental
 
+MINUTES = 60  # seconds
 
-def app_name_from_model(model_name: str) -> str:
-    return re.sub(r"[^a-z0-9]+", "-", model_name.split("/")[-1].lower()).strip("-")
+# ## Container image
 
-
-MINUTES = 60
-AUTOINFERENCE_UTILS_VERSION = "0.2.6"
-DEFAULT_PORT = 8000
-HF_CACHE_PATH = "/root/.cache/huggingface"  # canonical HF cache path
-HF_CACHE_VOLUME_NAME = "kimi-k3-nvfp4-cache"  # dedicated volume for this model
-HF_IMAGE_ENV = {
-    "HF_HOME": HF_CACHE_PATH,
-    "HF_XET_HIGH_PERFORMANCE": "1",
-    "HF_HUB_ENABLE_HF_TRANSFER": "1",
-}
-
-MODEL_NAME = "nvidia/Kimi-K3-NVFP4"
-SPECULATOR_PATH = "RadixArk/Kimi-K3-DSpark"
-app = modal.App(name=app_name_from_model(MODEL_NAME))
-
-GPU_TYPE = "B300"  # 288 GB each; 8x is the validated TP8 config for K3
-N_GPUS = 8
-GPU = f"{GPU_TYPE}:{N_GPUS}"
+# The `lmsysorg/sglang:dev-dev-kimi-k3-nvfp4` image (CUDA 13 build from
+# SGLang PR #35077) is the only published build that can load the NVFP4
+# checkpoint; released SGLang versions cannot. Do not substitute a stock tag.
 
 SGLANG_IMAGE_TAG = "lmsysorg/sglang:dev-dev-kimi-k3-nvfp4"
 
-DG_CACHE_DIR = "/root/dg-cache"
-DG_CACHE_VOLUME_NAME = "dg-cache"
-
-MIN_CONTAINERS = int(os.getenv("MIN_CONTAINERS", "0"))
-SCALEDOWN_WINDOW = 10 * MINUTES
-PROXY_REGIONS = os.getenv("PROXY_REGIONS", "us-west").split(",")
-TARGET_INPUTS = 32
-STARTUP_TIMEOUT = 2 * 60 * MINUTES  # first boot downloads ~1.6 TB
-
-HF_CACHE_VOL = modal.Volume.from_name(
-    HF_CACHE_VOLUME_NAME, create_if_missing=True
-)
-DG_CACHE_VOL = modal.Volume.from_name(DG_CACHE_VOLUME_NAME, create_if_missing=True)
-
-serving_image = (
+sglang_image = (
     modal.Image.from_registry(SGLANG_IMAGE_TAG)
-    .pip_install("distro")
-    .apt_install("git")
+    .entrypoint(
+        []  # silence chatty logs on container start
+    )
     .run_commands(
         # Raise uvicorn keep-alive so long streaming responses aren't cut.
         "sed -i 's/timeout_keep_alive=5/timeout_keep_alive=300/g'"
         " /sgl-workspace/sglang/python/sglang/srt/entrypoints/http_server.py"
         " || true",
     )
-    .env(
-        HF_IMAGE_ENV
-        | {
-            "SGLANG_DG_CACHE_DIR": DG_CACHE_DIR,
-            "SGLANG_ALLOW_OVERWRITE_LONGER_CONTEXT_LEN": "1",
-            "SGLANG_DISABLE_CUDNN_CHECK": "1",
-            "SGLANG_ENABLE_SPEC_V2": "1",
-        }
-    )
-    .pip_install(f"autoinference-utils=={AUTOINFERENCE_UTILS_VERSION}")
 )
 
-download_image = (
-    modal.Image.debian_slim(python_version="3.12")
-    .pip_install("huggingface_hub[hf_transfer]")
-    .env(HF_IMAGE_ENV)
+# ## GPU choice
+
+# B300: 288 GB per GPU; 8x is the validated TP8 config for Kimi-K3.
+
+GPU_TYPE, N_GPUS = "B300", 8
+GPU = f"{GPU_TYPE}:{N_GPUS}"
+
+# ## Model and weights cache
+
+MODEL_NAME = "nvidia/Kimi-K3-NVFP4"
+SPECULATOR_NAME = "RadixArk/Kimi-K3-DSpark"
+
+# Dedicated volume, pre-populated (1.6 TB) via the download-models function
+# from the previous revision — still valid, mounted at the canonical HF path.
+
+HF_CACHE_PATH = "/root/.cache/huggingface"
+HF_CACHE_VOL = modal.Volume.from_name(
+    "kimi-k3-nvfp4-cache", create_if_missing=True
 )
 
+# ## Kernel/compilation artifact cache
 
-@app.function(
-    image=download_image,
-    volumes={HF_CACHE_PATH: HF_CACHE_VOL},
-    cpu=4,
-    memory=8 * 1024,
-    timeout=24 * 60 * MINUTES,
+# The flashinfer_trtllm MoE kernels JIT-compile at first boot; cache the
+# artifacts on a Volume so later boots skip that work.
+
+DG_CACHE_PATH = "/root/dg-cache"
+DG_CACHE_VOL = modal.Volume.from_name("dg-cache", create_if_missing=True)
+
+sglang_image = sglang_image.env(
+    {
+        "HF_HOME": HF_CACHE_PATH,
+        "HF_HUB_CACHE": HF_CACHE_PATH,
+        "HF_XET_HIGH_PERFORMANCE": "1",
+        "SGLANG_DG_CACHE_DIR": DG_CACHE_PATH,
+        # Kimi-K3 specifics
+        "SGLANG_ALLOW_OVERWRITE_LONGER_CONTEXT_LEN": "1",
+        "SGLANG_DISABLE_CUDNN_CHECK": "1",
+        "SGLANG_ENABLE_SPEC_V2": "1",  # required for DSPARK
+    }
 )
-def download_models():
-    """Pre-fetch model artifacts into the HF cache volume on CPU (no GPU burn).
 
-    Commits the volume every 10 minutes so a crash mid-download keeps progress.
-    """
-    stop = threading.Event()
+# ## SGLang server configuration
 
-    def _commit_loop():
-        while not stop.wait(10 * MINUTES):
-            HF_CACHE_VOL.commit()
-            print("[download] volume checkpoint committed", flush=True)
+# DSPARK speculative decoding (cookbook default operating point: block size 7).
+# Drop the three speculative args below to serve without speculation.
 
-    committer = threading.Thread(target=_commit_loop, daemon=True)
-    committer.start()
-    try:
-        for repo in (MODEL_NAME, SPECULATOR_PATH):
-            print(f"[download] fetching {repo}", flush=True)
-            subprocess.run(
-                ["hf", "download", repo], check=True,
-                env={**os.environ, "HF_HOME": HF_CACHE_PATH},
-            )
-    finally:
-        stop.set()
-        HF_CACHE_VOL.commit()
-    print("[download] all artifacts cached", flush=True)
-
-
-with serving_image.imports():
-    from autoinference_utils.endpoint import (
-        SGLangEndpoint,
-        start_heartbeat_thread,
-        warmup_chat_completions,
-    )
+speculative_config = {
+    "speculative-algorithm": "DSPARK",
+    "speculative-draft-model-path": SPECULATOR_NAME,
+    "speculative-dspark-block-size": 7,
+    # Required for spec dec with Kimi-K3's hybrid SSM arch.
+    "enable-linear-replayssm-spec": "",
+}
 
 SERVER_ARGS = {
     "--trust-remote-code": "",
@@ -152,65 +102,206 @@ SERVER_ARGS = {
     # Required, not optional: flashinfer_cutlass has no SiTU kernel for the
     # routed experts and auto-resolution never picks the TRT-LLM path.
     "--moe-runner-backend": "flashinfer_trtllm",
-    # DSPARK speculative decoding (cookbook default operating point).
-    "--speculative-algorithm": "DSPARK",
-    "--speculative-dspark-block-size": "7",
-    "--enable-linear-replayssm-spec": "",
 }
 
-WARMUP_PAYLOAD = {
-    "model": MODEL_NAME,
-    "messages": [{"role": "user", "content": "A " * 32000}],
-    "max_tokens": 1,
-    "temperature": 0.0,
-}
+# ## Infrastructure
+
+REGION = "us-west"
+ROUTING_REGION = "us-west"
+MIN_CONTAINERS = int(os.getenv("MIN_CONTAINERS", "0"))  # 1 = always warm
+TARGET_INPUTS = 32
+STARTUP_TIMEOUT = 90 * MINUTES  # first boot loads ~1.6 TB from the Volume
 
 
-@app.cls(
-    image=serving_image,
+def check_running(p: subprocess.Popen):
+    if (rc := p.poll()) is not None:
+        raise subprocess.CalledProcessError(rc, cmd=p.args)
+
+
+def wait_ready(process: subprocess.Popen, timeout: int = 90 * MINUTES):
+    import requests
+
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        try:
+            check_running(process)
+            requests.get(f"http://127.0.0.1:{PORT}/health").raise_for_status()
+            return
+        except (
+            subprocess.CalledProcessError,
+            requests.exceptions.ConnectionError,
+            requests.exceptions.HTTPError,
+        ):
+            time.sleep(5)
+    raise TimeoutError(f"SGLang server not ready within {timeout} seconds")
+
+
+def warmup():
+    import requests
+
+    payload = {
+        "messages": [{"role": "user", "content": "Hello, how are you?"}],
+        "max_tokens": 16,
+    }
+    for _ in range(3):
+        requests.post(
+            f"http://127.0.0.1:{PORT}/v1/chat/completions", json=payload, timeout=10
+        ).raise_for_status()
+
+
+# ## The server
+
+
+app = modal.App(name="kimi-k3")
+PORT = 8000
+
+
+@app.server(
+    image=sglang_image,
     gpu=GPU,
-    volumes={
-        HF_CACHE_PATH: HF_CACHE_VOL,
-        DG_CACHE_DIR: DG_CACHE_VOL,
-    },
+    volumes={HF_CACHE_PATH: HF_CACHE_VOL, DG_CACHE_PATH: DG_CACHE_VOL},
+    compute_region=REGION,
     min_containers=MIN_CONTAINERS,
-    timeout=30 * MINUTES,
-    scaledown_window=SCALEDOWN_WINDOW,
-    experimental_options={"override_eof_timeout": 30 * 60},
-)
-@modal.experimental.http_server(
-    port=DEFAULT_PORT,
-    proxy_regions=PROXY_REGIONS,
-    exit_grace_period=25,
     startup_timeout=STARTUP_TIMEOUT,
+    port=PORT,  # wrapped code must listen on this port
+    routing_region=ROUTING_REGION,  # location of proxies, should be close to region
+    exit_grace_period=25,  # seconds, time to finish up requests when closing down
+    target_concurrency=TARGET_INPUTS,
+    unauthenticated=True,
 )
-@modal.concurrent(target_inputs=TARGET_INPUTS)
-class Server:
+class SGLang:
     @modal.enter()
     def startup(self):
-        self.endpoint = SGLangEndpoint(
-            model_path=MODEL_NAME,
-            speculative_model_path=SPECULATOR_PATH,
-            worker_port=DEFAULT_PORT,
-            tp=N_GPUS,
-            extra_server_args=SERVER_ARGS,
-            health_timeout=90 * MINUTES,  # covers first-boot weight download
-            health_poll_interval=10.0,
-        )
-        self.endpoint.start()
-        warmup_chat_completions(
-            port=DEFAULT_PORT,
-            payload=WARMUP_PAYLOAD,
-            successful_requests=3,
-            request_timeout=120.0,
-        )
-        start_heartbeat_thread(
-            self.endpoint.health_check,
-            on_failure=lambda: modal.experimental.stop_fetching_inputs(),
-        )
-        print("Kimi-K3 (8xB300, DSPARK) is ready to serve.")
+        """Start the SGLang server, block until healthy, then warm it up."""
+        cmd = [
+            "python",
+            "-m",
+            "sglang.launch_server",
+            "--model-path",
+            MODEL_NAME,
+            "--served-model-name",
+            MODEL_NAME,
+            "--host",
+            "0.0.0.0",
+            "--port",
+            f"{PORT}",
+            "--tp",  # use all GPUs to split up tensor-parallel operations
+            f"{N_GPUS}",
+            "--cuda-graph-max-bs",  # only capture CUDA graphs for likely batch sizes
+            f"{TARGET_INPUTS * 2}",
+            "--enable-metrics",  # expose metrics endpoints for telemetry
+            "--decode-log-interval",  # how often to log during decoding, in tokens
+            "10",
+        ]
+
+        cmd += [
+            item for k, v in SERVER_ARGS.items() for item in (k, str(v))
+        ]
+        cmd += [  # add speculative config
+            item for k, v in speculative_config.items() for item in (f"--{k}", str(v))
+        ]
+
+        self.process = subprocess.Popen(cmd, env=os.environ)
+        wait_ready(self.process)
+        warmup()
 
     @modal.exit()
     def stop(self):
-        if hasattr(self, "endpoint"):
-            self.endpoint.stop()
+        self.process.terminate()
+
+
+# ## Test the server
+
+# Run with `modal run serve.py` — spins up a fresh replica and streams a
+# couple of test completions from your local machine.
+
+
+@app.local_entrypoint()
+async def test(test_timeout=10 * MINUTES, prompt=None, twice=True):
+    url = await SGLang.get_url.aio()
+
+    system_prompt = {
+        "role": "system",
+        "content": "You are a pirate who can't help but drop sly reminders that he went to Harvard.",
+    }
+    if prompt is None:
+        prompt = "Explain the Singular Value Decomposition."
+
+    content = [{"type": "text", "text": prompt}]
+
+    messages = [  # OpenAI chat format
+        system_prompt,
+        {"role": "user", "content": content},
+    ]
+
+    await probe(url, messages, timeout=test_timeout)
+    if twice:
+        messages[0]["content"] = "You are Jar Jar Binks."
+        print(f"Sending messages to {url}:", *messages, sep="\n\t")
+        await probe(url, messages, timeout=test_timeout)
+
+
+# Send `Modal-Session-ID` with each request to get sticky routing across
+# replicas, which improves KV cache hit rates for multi-turn conversations.
+
+
+async def probe(url, messages=None, timeout=5 * MINUTES):
+    if messages is None:
+        messages = [{"role": "user", "content": "Tell me a joke."}]
+
+    client_id = str(0)  # set this to some string per multi-turn interaction
+    headers = {"Modal-Session-ID": client_id}
+    deadline = time.time() + timeout
+    async with aiohttp.ClientSession(base_url=url, headers=headers) as session:
+        while time.time() < deadline:
+            try:
+                await _send_request_streaming(session, messages)
+                return
+            except asyncio.TimeoutError:
+                await asyncio.sleep(1)
+            except aiohttp.client_exceptions.ClientResponseError as e:
+                if e.status == 503:
+                    await asyncio.sleep(1)
+                    continue
+                raise e
+    raise TimeoutError(f"No response from server within {timeout} seconds")
+
+
+async def _send_request_streaming(
+    session: aiohttp.ClientSession, messages: list, timeout: int | None = None
+) -> None:
+    payload = {"messages": messages, "stream": True}
+    headers = {"Accept": "text/event-stream"}
+
+    async with session.post(
+        "/v1/chat/completions", json=payload, headers=headers, timeout=timeout
+    ) as resp:
+        resp.raise_for_status()
+        full_text = ""
+
+        async for raw in resp.content:
+            line = raw.decode("utf-8", errors="ignore").strip()
+            if not line:
+                continue
+
+            # Server-Sent Events format: "data: ...."
+            if not line.startswith("data:"):
+                continue
+
+            data = line[len("data:") :].strip()
+            if data == "[DONE]":
+                break
+
+            try:
+                evt = json.loads(data)
+            except json.JSONDecodeError:
+                # ignore any non-JSON keepalive
+                continue
+
+            delta = (evt.get("choices") or [{}])[0].get("delta") or {}
+            chunk = delta.get("content")
+
+            if chunk:
+                print(chunk, end="", flush="\n" in chunk or "." in chunk)
+                full_text += chunk
+        print()  # newline after stream completes

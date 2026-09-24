@@ -1,5 +1,424 @@
-Error: Specify a Modal Function or local entrypoint to run. E.g.
-> modal run serve.py::my_function [..args]
+✓ Initialized. View run at 
+https://modal.com/apps/aviralmansingka/main/ap-GLVFgTL7dGKOuBleHPoO6u
+Building image im-hZi6fbmPGxEARc1K5gAOrC
+Building image im-Y9klO8i7TMP0WZCiKswUuM
 
-'serve.py' has the following functions and local entrypoints:
-download_models / app.download_models
+=> Step 0: FROM base
+
+=> Step 1: RUN python -m pip install 'huggingface_hub[hf_transfer]'
+
+=> Step 0: FROM lmsysorg/sglang:dev-dev-kimi-k3-nvfp4
+Getting image source signatures
+Copying blob sha256:689b91d88a0f4086057ec826027b128902ecf2b516be510371c115bc55da19a6
+Copying blob sha256:95e35692d3cc347d712fd236fd2af3b1c697783518182b1ae716722f694ed616
+Copying blob sha256:a30da298bda6986d68697bc361b9204f189616a3b7cc748c91846ecddbb873aa
+Copying blob sha256:4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1
+Copying blob sha256:ccf9c70a85fc6158d617c85f3f719f669efb00c28fd45fa292575d351435bd2f
+Copying blob sha256:5e25946ba40dcbc2410bf1852d135a46cb31cc7f89c05b9ef1ab12a6ef988aeb
+Copying blob sha256:cc689184d8c0977f56d2da63b3a3d225dc9c7fadb9375338768cf4909b016b32
+Copying blob sha256:8bd080c2e4b22c71c5058be60551a2735c1bead7341fe005313ca704578d9fa5
+Copying blob sha256:b533a7368b7da8141f98b9a2442f84b5aa5d32f2d286c2611a32f725361f84b6
+Copying blob sha256:adebc1576f3c07100011ce7679aef5e7bb1e4aaca050e6d8e729273d22a2442a
+Copying blob sha256:21e0ed254c8bac8e7e21e80b250a5dc4a92211bbc2f658f9f81ef93c7c623f03
+Copying blob sha256:730c8029606bf4b4533d7a7159458cf5e3f348ea956ccfb10ce5da3e20adac8f
+Copying blob sha256:400821fd86ee1a17c460a7addf3892121cfb660a274b37e6a23cf36e7eaa931c
+Copying blob sha256:f0af354daeda18f18684b23520969ef6bb3de82bb267936f867b12769be9125d
+Copying blob sha256:cb3db0ad5ae089b6ae0c5b39b73e73cac40a558df052e602f8b0f24972b003b4
+Looking in indexes: http://pypi-mirror.modal.local:5555/simple
+Collecting huggingface_hub[hf_transfer]
+  Downloading http://pypi-mirror.modal.local:5555/simple/huggingface-hub/huggingface_hub-2.0.0-py3-none-any.whl.metadata (16 kB)
+WARNING: huggingface-hub 2.0.0 does not provide the extra 'hf-transfer'
+Collecting click<9.0.0,>=8.4.2 (from huggingface_hub[hf_transfer])
+  Downloading http://pypi-mirror.modal.local:5555/simple/click/click-8.5.0-py3-none-any.whl.metadata (2.6 kB)
+Collecting filelock>=3.10.0 (from huggingface_hub[hf_transfer])
+  Downloading http://pypi-mirror.modal.local:5555/simple/filelock/filelock-4.0.3-py3-none-any.whl.metadata (2.0 kB)
+Collecting fsspec>=2023.5.0 (from huggingface_hub[hf_transfer])
+  Downloading http://pypi-mirror.modal.local:5555/simple/fsspec/fsspec-2026.9.0-py3-none-any.whl.metadata (10 kB)
+Collecting hf-xet<2.0.0,>=1.6.0 (from huggingface_hub[hf_transfer])
+  Downloading http://pypi-mirror.modal.local:5555/simple/hf-xet/hf_xet-1.6.0-cp38-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (4.9 kB)
+Collecting httpx2<3,>=2.0.0 (from huggingface_hub[hf_transfer])
+  Downloading http://pypi-mirror.modal.local:5555/simple/httpx2/httpx2-2.13.1-py3-none-any.whl.metadata (9.8 kB)
+Copying blob sha256:4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1
+Collecting packaging>=20.9 (from huggingface_hub[hf_transfer])
+  Downloading http://pypi-mirror.modal.local:5555/simple/packaging/packaging-26.3-py3-none-any.whl.metadata (3.5 kB)
+Collecting pyyaml>=5.1 (from huggingface_hub[hf_transfer])
+  Downloading http://pypi-mirror.modal.local:5555/simple/pyyaml/pyyaml-6.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (2.4 kB)
+Collecting tqdm>=4.42.1 (from huggingface_hub[hf_transfer])
+  Downloading http://pypi-mirror.modal.local:5555/simple/tqdm/tqdm-4.70.1-py3-none-any.whl.metadata (57 kB)
+Collecting typing-extensions>=4.1.0 (from huggingface_hub[hf_transfer])
+  Downloading http://pypi-mirror.modal.local:5555/simple/typing-extensions/typing_extensions-4.16.0-py3-none-any.whl.metadata (3.3 kB)
+Collecting anyio>=4.10 (from httpx2<3,>=2.0.0->huggingface_hub[hf_transfer])
+  Downloading http://pypi-mirror.modal.local:5555/simple/anyio/anyio-4.15.1-py3-none-any.whl.metadata (4.7 kB)
+Copying blob sha256:766aa052b83be01588657c62cba3e83789c0b3bf7ee2cd81cd7cede346c96348
+Copying blob sha256:a1e6f16f347283d173881be72ce1500e7b2dc2d0f12e4a41564ccd865bb1411c
+Copying blob sha256:4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1
+Copying blob sha256:f386bc1898828da893d59461012df25a62ecfb009dcaa34b5c2e4ca94cf6623c
+Copying blob sha256:4b7e0d68280c733045a97ea6a2d8ccf912020514a81f79a82344834587af8a1d
+Copying blob sha256:ec5b26a6cbd2250a52cc15bac28186e8cef1192e7507a45413534d35204271cf
+Copying blob sha256:863d482bc2205864cf402f8f34374093d0f022a256e96d0019d405e5dade447e
+Copying blob sha256:842bc90e65ef6c2ae0ea4c75a372fa32f22b1c82ed6ba404fa4675ab4f94b04f
+Copying blob sha256:65d34c5f8901d76341914ac8ad428454f36ab45f4c9eaa9b9d5cb34398a6ffb8
+Copying blob sha256:afa050c4c078e38a4b390da5485ce57e66eae62866a17ba646d267ac8b17265a
+Copying blob sha256:c321b1aabd5f79a3e5bcacd2e634174e10d1ed0f340a78563df33577da5c5cab
+Copying blob sha256:aa2b42a16c757b18e7787089efe37cb5a2c07246cddd436c2803843d9c766343
+Collecting httpcore2==2.13.1 (from httpx2<3,>=2.0.0->huggingface_hub[hf_transfer])
+  Downloading http://pypi-mirror.modal.local:5555/simple/httpcore2/httpcore2-2.13.1-py3-none-any.whl.metadata (26 kB)
+Collecting idna>=3.18 (from httpx2<3,>=2.0.0->huggingface_hub[hf_transfer])
+  Downloading http://pypi-mirror.modal.local:5555/simple/idna/idna-3.20-py3-none-any.whl.metadata (7.2 kB)
+Collecting truststore>=0.10 (from httpx2<3,>=2.0.0->huggingface_hub[hf_transfer])
+  Downloading http://pypi-mirror.modal.local:5555/simple/truststore/truststore-0.10.4-py3-none-any.whl.metadata (4.4 kB)
+Collecting h11>=0.16 (from httpcore2==2.13.1->httpx2<3,>=2.0.0->huggingface_hub[hf_transfer])
+Copying blob sha256:4c8a623ed031609e112082e02e29c43b92ab3d7aba3dc38dcc64c025eeccd0f5
+  Downloading http://pypi-mirror.modal.local:5555/simple/h11/h11-0.16.0-py3-none-any.whl.metadata (8.3 kB)
+Downloading http://pypi-mirror.modal.local:5555/simple/huggingface-hub/huggingface_hub-2.0.0-py3-none-any.whl (828 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 828.5/828.5 kB 213.3 MB/s eta 0:00:00
+Downloading http://pypi-mirror.modal.local:5555/simple/click/click-8.5.0-py3-none-any.whl (125 kB)
+Downloading http://pypi-mirror.modal.local:5555/simple/hf-xet/hf_xet-1.6.0-cp38-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (4.5 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 4.5/4.5 MB 547.7 MB/s eta 0:00:00
+Downloading http://pypi-mirror.modal.local:5555/simple/httpx2/httpx2-2.13.1-py3-none-any.whl (95 kB)
+Downloading http://pypi-mirror.modal.local:5555/simple/httpcore2/httpcore2-2.13.1-py3-none-any.whl (83 kB)
+Downloading http://pypi-mirror.modal.local:5555/simple/anyio/anyio-4.15.1-py3-none-any.whl (132 kB)
+Downloading http://pypi-mirror.modal.local:5555/simple/filelock/filelock-4.0.3-py3-none-any.whl (108 kB)
+Downloading http://pypi-mirror.modal.local:5555/simple/fsspec/fsspec-2026.9.0-py3-none-any.whl (221 kB)
+Downloading http://pypi-mirror.modal.local:5555/simple/h11/h11-0.16.0-py3-none-any.whl (37 kB)
+Downloading http://pypi-mirror.modal.local:5555/simple/idna/idna-3.20-py3-none-any.whl (69 kB)
+Downloading http://pypi-mirror.modal.local:5555/simple/packaging/packaging-26.3-py3-none-any.whl (129 kB)
+Downloading http://pypi-mirror.modal.local:5555/simple/pyyaml/pyyaml-6.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (807 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 807.9/807.9 kB 1.1 GB/s eta 0:00:00
+Downloading http://pypi-mirror.modal.local:5555/simple/tqdm/tqdm-4.70.1-py3-none-any.whl (80 kB)
+Downloading http://pypi-mirror.modal.local:5555/simple/truststore/truststore-0.10.4-py3-none-any.whl (18 kB)
+Downloading http://pypi-mirror.modal.local:5555/simple/typing-extensions/typing_extensions-4.16.0-py3-none-any.whl (45 kB)
+Installing collected packages: typing-extensions, truststore, tqdm, pyyaml, packaging, idna, hf-xet, h11, fsspec, filelock, click, httpcore2, anyio, httpx2, huggingface_hub
+Copying blob sha256:d7b62c79959496737b324690a7742d78eeea4d0b44b587f2c850fb30d618bbe8
+Copying blob sha256:feb3b1df548628cb142735f0b2a719f44ff3119262af059dcb183cf5f07a0649
+Copying blob sha256:4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1
+Copying blob sha256:5610dd34d95f154867ed3f5447e1c34116179bd5b116fdea82f9a58d59a1a6f1
+Copying blob sha256:8a2511f6cac5d7b430ec5fb4937e37f14d9330e75d48beaf64361cf48d2b3919
+Copying blob sha256:2af589f6859a0cc9cf057723d26fa42cd2dbca3e42b3b05b01e45ba2c6bf146f
+Copying blob sha256:1c0417d18ce34deebde4edd364281854f283f73454929a7a45ab8db4389e1d2a
+Copying blob sha256:4138af5494a689abc9937a96efef4e92c60ed184d69f2fe7aaa26d76fb0cb3f5
+Copying blob sha256:c315f769cc1002426ece5eaf213538122fb9caa9a61225dc91dcc8c6c2147fe4
+Copying blob sha256:ebc9f320d1e1e77c874bc7cb1495bd01a0a9807ede7206602df9c790a3680445
+Copying blob sha256:94fe08796705e217eeadd157acd555fe7be8cc997df93e3b55c48a16188bb103
+Copying blob sha256:761af622372385c2af53746bf1d236cd30aad1fbf3ea744b84d46b06796f87aa
+Copying blob sha256:b80aef0b9c13d2d19ad5615115abb295208b000d9c016210a49ccc2624c5cb8e
+Copying blob sha256:4147b15751b1187a865db860e93b527db335de9a361af912149dd6b9555d0281
+Copying blob sha256:09048c5254a472fcfc2332a8819901b90cee4d8213be7e2a257e56058c9b9c3b
+Copying blob sha256:2c33634ba36f336368837bceb4c67e3d9f9eb4772a6be3e5b6631f203b54d88f
+Copying blob sha256:b88ab65e0bec7d7ac45351bcfcbe13df7ad77eacd02f5559ab23efca0ba6989d
+Copying blob sha256:fdefc8ddfacbfdc508a50618b7ad1abe3122539fe246d38ee56ec391a19ed21e
+Copying blob sha256:575bc3445a4318d0c99d2d4a3df400c5ead9076ca9aefa3a662c54a8301bb94e
+Copying blob sha256:a1a8ce469261cbeb6fa838d6582f8259d59bdd473fa55e276b461c6ace2b400d
+Copying blob sha256:6dec6f7cfe255c9899f0bd96a559af0e17bb1de7b8c697ae3a18adf94fd1fcaf
+Copying blob sha256:30b750cc865e9133c0d76563f3c6b6e0cabf37803df9059d30e2b9d23a29ec09
+
+Successfully installed anyio-4.15.1 click-8.5.0 filelock-4.0.3 fsspec-2026.9.0 h11-0.16.0 hf-xet-1.6.0 httpcore2-2.13.1 httpx2-2.13.1 huggingface_hub-2.0.0 idna-3.20 packaging-26.3 pyyaml-6.0.3 tqdm-4.70.1 truststore-0.10.4 typing-extensions-4.16.0
+
+[notice] A new release of pip is available: 25.1.1 -> 26.2.1
+[notice] To update, run: pip install --upgrade pip
+Copying blob sha256:da0511c615bf20a2fa02de72880ed9f2c539930c205ade5e949d6fd1b8bec51f
+Saving image...
+Copying blob sha256:8729c8c200fe0558391bfa284129170faede78d6a42ca64e6642184add4ffcb5
+Copying blob sha256:579ace3e35ff66945df2506e2be4df524e9ac5b3f392e5df311bbfc8fff8b7e6
+Copying blob sha256:161a833c11c6292d3c8504adf9a8f502fdb322ec942b4c78e7fbf5560bb1a21d
+Copying blob sha256:b86f1ee77982a5651f3b59d3e69d314007a52d0778ab2d14671e6257de1c7fe1
+Copying blob sha256:62d8da033d80a1ef0c64f3d5936308455b8c7e33f8668369b73fc4d745c0ccdd
+Copying blob sha256:dc6dad4badda9c8f719f594b0056111accc9fa61108e83b1ae03133c0f5e46b4
+Copying blob sha256:4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1
+Copying blob sha256:aabd9260deb3f6307dbd982aa08c3e6017507f4544f7a390ecd1f3c772e1b26b
+Copying blob sha256:ff2734e5b6d706ecbdb1538b1caa94bb6baa7eadb2749d41c754bd5401a8badf
+Image saved, took 380.42ms
+
+Built image im-Y9klO8i7TMP0WZCiKswUuM in 3.68s
+
+
+Copying blob sha256:f227d2c318aedc85864f3c21e240e7fc6068590658dccc8b87eedeaa9dacc05f
+Copying blob sha256:6fcd012f56da09ed85ddaf80ec3798cd50db36d65766ddd35431a9c14ee6c340
+Copying blob sha256:47d7cb9782ab9f954b86f810a3e8f4282b2e2e60fd610ace8b30e2e7a4fa7d0a
+Copying blob sha256:e457c8cf5e576f9e2b2b0f2072a7cddf92acf37992f1fa649f5b68b6011f7f9f
+Copying blob sha256:4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1
+Building image im-XNV7TxeUFKRo44r90GS7FM
+
+=> Step 0: FROM base
+
+=> Step 1: ENV HF_HOME=/root/.cache/huggingface
+
+=> Step 2: ENV HF_XET_HIGH_PERFORMANCE=1
+
+=> Step 3: ENV HF_HUB_ENABLE_HF_TRANSFER=1
+Saving image...
+Image saved, took 1.10s
+
+Built image im-XNV7TxeUFKRo44r90GS7FM in 2.04s
+
+
+Copying config sha256:a071bfec723e616c88471431c614458e7ba48e671f3a0901420ab282cf36f2c4
+Writing manifest to image destination
+Unpacking OCI image
+   • unpacking rootfs ...     
+   • ... done                 
+   • unpacked image rootfs: /tmp/task-data/ta-01M3A312SYSNNS7T8N9KXA4KWB/registry-unpackLasBtI
+Copied image in 21.46s
+Saving image...
+Image saved, took 18.44s
+
+Built image im-hZi6fbmPGxEARc1K5gAOrC in 282.87s
+
+
+Building image im-4FzdesUIknnccuCJO5Ibzf
+
+=> Step 0: FROM base
+
+=> Step 1: RUN python -m pip install distro
+Looking in indexes: http://pypi-mirror.modal.local:5555/simple
+Requirement already satisfied: distro in /usr/local/lib/python3.12/dist-packages (1.9.0)
+Saving image...
+Image saved, took 3.34s
+
+Built image im-4FzdesUIknnccuCJO5Ibzf in 8.92s
+
+
+Building image im-GoPmH5IDMAn6eNo6rdU8QG
+
+=> Step 0: FROM base
+
+=> Step 1: RUN apt-get update
+Get:2 https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64  InRelease [1,578 B]
+Get:3 http://archive.ubuntu.com/ubuntu noble InRelease [256 kB]
+Get:1 https://developer.download.nvidia.com/devtools/repos/ubuntu2004/amd64  InRelease [1,379 B]
+Get:4 http://security.ubuntu.com/ubuntu noble-security InRelease [126 kB]
+Get:5 https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64  Packages [1,877 kB]
+Get:6 http://archive.ubuntu.com/ubuntu noble-updates InRelease [126 kB]
+Get:7 https://developer.download.nvidia.com/devtools/repos/ubuntu2004/amd64  Packages [21.6 kB]
+Get:8 http://security.ubuntu.com/ubuntu noble-security/universe amd64 Packages [1,547 kB]
+Get:9 http://security.ubuntu.com/ubuntu noble-security/multiverse amd64 Packages [50.0 kB]
+Get:10 http://security.ubuntu.com/ubuntu noble-security/restricted amd64 Packages [1,905 kB]
+Get:11 http://security.ubuntu.com/ubuntu noble-security/main amd64 Packages [1,298 kB]
+Get:12 http://archive.ubuntu.com/ubuntu noble-backports InRelease [126 kB]
+Get:13 http://archive.ubuntu.com/ubuntu noble/universe amd64 Packages [19.3 MB]
+Get:14 http://archive.ubuntu.com/ubuntu noble/main amd64 Packages [1,808 kB]
+Get:15 http://archive.ubuntu.com/ubuntu noble/multiverse amd64 Packages [331 kB]
+Get:16 http://archive.ubuntu.com/ubuntu noble/restricted amd64 Packages [117 kB]
+Get:17 http://archive.ubuntu.com/ubuntu noble-updates/multiverse amd64 Packages [56.2 kB]
+Get:18 http://archive.ubuntu.com/ubuntu noble-updates/universe amd64 Packages [2,161 kB]
+Get:19 http://archive.ubuntu.com/ubuntu noble-updates/restricted amd64 Packages [2,025 kB]
+Get:20 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 Packages [1,621 kB]
+Get:21 http://archive.ubuntu.com/ubuntu noble-backports/multiverse amd64 Packages [671 B]
+Get:22 http://archive.ubuntu.com/ubuntu noble-backports/universe amd64 Packages [36.0 kB]
+Get:23 http://archive.ubuntu.com/ubuntu noble-backports/main amd64 Packages [49.0 kB]
+Fetched 34.9 MB in 34s (1,013 kB/s)
+Reading package lists...
+W: http://developer.download.nvidia.com/devtools/repos/ubuntu2004/amd64/InRelease: Key is stored in legacy trusted.gpg keyring (/etc/apt/trusted.gpg), see the DEPRECATION section in apt-key(8) for details.
+
+=> Step 2: RUN apt-get install -y git
+Reading package lists...
+Building dependency tree...
+Reading state information...
+git is already the newest version (1:2.43.0-1ubuntu7.3).
+git set to manually installed.
+0 upgraded, 0 newly installed, 0 to remove and 130 not upgraded.
+Saving image...
+Image saved, took 3.08s
+
+Built image im-GoPmH5IDMAn6eNo6rdU8QG in 42.40s
+
+
+Building image im-bxM2vQoBDVeP06Ysn8YLs6
+
+=> Step 0: FROM base
+
+=> Step 1: RUN sed -i 's/timeout_keep_alive=5/timeout_keep_alive=300/g' /sgl-workspace/sglang/python/sglang/srt/entrypoints/http_server.py || true
+Saving image...
+Image saved, took 3.15s
+
+Built image im-bxM2vQoBDVeP06Ysn8YLs6 in 5.05s
+
+
+Building image im-25WuK5ebhTfviny79itPpZ
+
+=> Step 0: FROM base
+
+=> Step 1: ENV HF_HOME=/root/.cache/huggingface
+
+=> Step 2: ENV HF_XET_HIGH_PERFORMANCE=1
+
+=> Step 3: ENV HF_HUB_ENABLE_HF_TRANSFER=1
+
+=> Step 4: ENV SGLANG_DG_CACHE_DIR=/root/dg-cache
+
+=> Step 5: ENV SGLANG_ALLOW_OVERWRITE_LONGER_CONTEXT_LEN=1
+
+=> Step 6: ENV SGLANG_DISABLE_CUDNN_CHECK=1
+
+=> Step 7: ENV SGLANG_ENABLE_SPEC_V2=1
+Saving image...
+Image saved, took 3.51s
+
+Built image im-25WuK5ebhTfviny79itPpZ in 5.64s
+
+
+Building image im-90PYfn1PebVPoUZrfLImzK
+
+=> Step 0: FROM base
+
+=> Step 1: RUN python -m pip install autoinference-utils==0.2.6
+Looking in indexes: http://pypi-mirror.modal.local:5555/simple
+Collecting autoinference-utils==0.2.6
+  Downloading autoinference_utils-0.2.6-py3-none-any.whl.metadata (513 bytes)
+Downloading autoinference_utils-0.2.6-py3-none-any.whl (9.9 kB)
+Installing collected packages: autoinference-utils
+Successfully installed autoinference-utils-0.2.6
+Saving image...
+Image saved, took 3.13s
+
+Built image im-90PYfn1PebVPoUZrfLImzK in 8.39s
+
+
+✓ Created objects.
+├── 🔨 Created mount /home/avirus/kimi-endpoint/serve.py
+├── 🔨 Created function download_models.
+├── 🔨 Created function Server.*.
+└── 🔨 Created flash service endpoint for Server.* => 
+    https://aviralmansingka--kimi-k3-nvfp4-server-dev.us-west.modal.direct
+╭─ Modal Warning ──────────────────────────────────────────────────────────────╮
+│ Server.*: `@modal.experimental.http_server` and                              │
+│ `experimental_options={'flash': 'True'}` are deprecated. Please upgrade to   │
+│ client version 1.5.1 or later and use `@app.server()` instead. See           │
+│ https://modal.com/docs/guide/servers for more details.                       │
+╰──────────────────────────────────────────────────────────────────────────────╯
+[download] fetching nvidia/Kimi-K3-NVFP4
+[90mHint: The `hf-cli` skill is not installed. Run `hf skills add -g` to teach your AI agents how to use the `hf` CLI.[0m
+
+[1AFetching 116 files:   0%|          | 0/116 [00:00<?, ?it/s]Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+
+[1AFetching 116 files:   1%|          | 1/116 [00:00<00:29,  3.90it/s]
+[1AFetching 116 files:   3%|▎         | 3/116 [00:00<00:21,  5.21it/s]
+[1AFetching 116 files:   8%|▊         | 9/116 [00:00<00:08, 12.03it/s]
+[1AFetching 116 files:   9%|▉         | 11/116 [00:01<00:10, 10.00it/s]
+[1AFetching 116 files:  10%|█         | 12/116 [00:19<00:10, 10.00it/s]
+[1AFetching 116 files:  11%|█         | 13/116 [00:28<06:37,  3.86s/it]
+[1AFetching 116 files:  12%|█▏        | 14/116 [03:02<48:24, 28.47s/it]
+[1AFetching 116 files:  13%|█▎        | 15/116 [05:31<1:26:29, 51.38s/it]
+[1AFetching 116 files:  14%|█▍        | 16/116 [05:35<1:08:40, 41.20s/it]
+[1AFetching 116 files:  15%|█▍        | 17/116 [05:35<52:26, 31.78s/it]  
+[1AFetching 116 files:  16%|█▋        | 19/116 [05:36<31:03, 19.21s/it]
+[1AFetching 116 files:  17%|█▋        | 20/116 [05:39<24:50, 15.53s/it]
+[1AFetching 116 files:  18%|█▊        | 21/116 [06:02<27:34, 17.42s/it]
+[1AFetching 116 files:  19%|█▉        | 22/116 [06:44<37:01, 23.63s/it][download] volume checkpoint committed
+
+[1AFetching 116 files:  20%|█▉        | 23/116 [11:07<2:16:04, 87.79s/it]
+[1AFetching 116 files:  21%|██        | 24/116 [11:20<1:43:00, 67.18s/it]
+[1AFetching 116 files:  22%|██▏       | 25/116 [11:26<1:15:32, 49.81s/it]
+[1AFetching 116 files:  22%|██▏       | 26/116 [11:31<55:03, 36.70s/it]  
+[1AFetching 116 files:  23%|██▎       | 27/116 [11:32<39:06, 26.36s/it]
+[1AFetching 116 files:  24%|██▍       | 28/116 [11:50<35:11, 24.00s/it]
+[1AFetching 116 files:  25%|██▌       | 29/116 [12:00<28:35, 19.72s/it]
+[1AFetching 116 files:  26%|██▌       | 30/116 [12:22<29:35, 20.65s/it]
+[1AFetching 116 files:  27%|██▋       | 31/116 [12:58<35:40, 25.18s/it]
+[1AFetching 116 files:  28%|██▊       | 32/116 [17:02<2:06:39, 90.48s/it]
+[1AFetching 116 files:  28%|██▊       | 33/116 [17:22<1:35:42, 69.19s/it]
+[1AFetching 116 files:  29%|██▉       | 34/116 [17:29<1:09:17, 50.70s/it]
+[1AFetching 116 files:  30%|███       | 35/116 [17:37<51:19, 38.02s/it]  
+[1AFetching 116 files:  31%|███       | 36/116 [17:54<42:14, 31.68s/it]
+[1AFetching 116 files:  32%|███▏      | 37/116 [18:10<35:35, 27.04s/it]
+[1AFetching 116 files:  33%|███▎      | 38/116 [18:17<27:23, 21.07s/it]
+[1AFetching 116 files:  34%|███▎      | 39/116 [18:27<22:34, 17.59s/it]
+[1AFetching 116 files:  34%|███▍      | 40/116 [19:26<37:56, 29.96s/it][download] volume checkpoint committed
+
+[1AFetching 116 files:  35%|███▌      | 41/116 [23:04<1:48:03, 86.44s/it]
+[1AFetching 116 files:  36%|███▌      | 42/116 [23:47<1:30:24, 73.31s/it]
+[1AFetching 116 files:  37%|███▋      | 43/116 [23:51<1:04:08, 52.72s/it]
+[1AFetching 116 files:  38%|███▊      | 44/116 [24:07<49:55, 41.60s/it]  
+[1AFetching 116 files:  39%|███▉      | 45/116 [24:23<40:02, 33.83s/it]
+[1AFetching 116 files:  40%|███▉      | 46/116 [24:29<29:47, 25.54s/it]
+[1AFetching 116 files:  41%|████      | 47/116 [24:40<24:29, 21.30s/it]
+[1AFetching 116 files:  41%|████▏     | 48/116 [24:49<19:49, 17.50s/it]
+[1AFetching 116 files:  42%|████▏     | 49/116 [26:00<37:34, 33.65s/it]
+[1AFetching 116 files:  43%|████▎     | 50/116 [29:16<1:30:22, 82.16s/it]
+[1AFetching 116 files:  44%|████▍     | 51/116 [29:50<1:13:35, 67.94s/it]
+[1AFetching 116 files:  45%|████▍     | 52/116 [29:53<51:25, 48.22s/it]  
+[1AFetching 116 files:  46%|████▌     | 53/116 [30:26<46:04, 43.89s/it]
+[1AFetching 116 files:  47%|████▋     | 54/116 [30:51<39:31, 38.25s/it]
+[1AFetching 116 files:  47%|████▋     | 55/116 [31:16<34:36, 34.03s/it]
+[1AFetching 116 files:  48%|████▊     | 56/116 [31:19<24:45, 24.76s/it]
+[download] volume checkpoint committed
+[1AFetching 116 files:  49%|████▉     | 57/116 [31:41<23:32, 23.94s/it]
+[1AFetching 116 files:  50%|█████     | 58/116 [34:05<58:01, 60.02s/it]
+[1AFetching 116 files:  51%|█████     | 59/116 [35:49<1:09:29, 73.16s/it]
+[1AFetching 116 files:  52%|█████▏    | 60/116 [35:56<49:44, 53.29s/it]  
+[1AFetching 116 files:  53%|█████▎    | 61/116 [36:35<45:03, 49.15s/it]
+[1AFetching 116 files:  53%|█████▎    | 62/116 [37:15<41:39, 46.28s/it]
+[1AFetching 116 files:  54%|█████▍    | 63/116 [37:38<34:40, 39.25s/it]
+[1AFetching 116 files:  55%|█████▌    | 64/116 [37:39<24:06, 27.82s/it]
+[1AFetching 116 files:  56%|█████▌    | 65/116 [37:55<20:40, 24.33s/it]
+[1AFetching 116 files:  57%|█████▋    | 66/116 [38:56<29:25, 35.30s/it]
+[1AFetching 116 files:  58%|█████▊    | 67/116 [40:37<44:52, 54.95s/it]
+[1AFetching 116 files:  59%|█████▊    | 68/116 [41:08<38:20, 47.93s/it]
+[1AFetching 116 files:  59%|█████▉    | 69/116 [42:07<40:01, 51.10s/it][download] volume checkpoint committed
+
+[1AFetching 116 files:  60%|██████    | 70/116 [43:12<42:27, 55.38s/it]
+[1AFetching 116 files:  61%|██████    | 71/116 [43:37<34:46, 46.36s/it]
+[1AFetching 116 files:  62%|██████▏   | 72/116 [43:56<27:57, 38.13s/it]
+[1AFetching 116 files:  63%|██████▎   | 73/116 [44:01<20:02, 27.96s/it]
+[1AFetching 116 files:  64%|██████▍   | 74/116 [44:26<18:57, 27.08s/it]
+[1AFetching 116 files:  65%|██████▍   | 75/116 [45:46<29:24, 43.04s/it]
+[1AFetching 116 files:  66%|██████▌   | 76/116 [46:11<25:03, 37.59s/it]
+[1AFetching 116 files:  66%|██████▋   | 77/116 [47:09<28:23, 43.69s/it]
+[1AFetching 116 files:  67%|██████▋   | 78/116 [48:54<39:18, 62.07s/it]
+[1AFetching 116 files:  68%|██████▊   | 79/116 [49:32<33:50, 54.89s/it]
+[1AFetching 116 files:  69%|██████▉   | 80/116 [49:35<23:35, 39.33s/it]
+[1AFetching 116 files:  70%|██████▉   | 81/116 [49:57<19:58, 34.23s/it]
+[1AFetching 116 files:  71%|███████   | 82/116 [50:27<18:36, 32.84s/it]
+[1AFetching 116 files:  72%|███████▏  | 83/116 [51:14<20:23, 37.08s/it]
+[1AFetching 116 files:  72%|███████▏  | 84/116 [51:43<18:33, 34.79s/it]
+[1AFetching 116 files:  73%|███████▎  | 85/116 [52:04<15:48, 30.61s/it][download] volume checkpoint committed
+
+[1AFetching 116 files:  74%|███████▍  | 86/116 [54:18<30:50, 61.68s/it]
+[1AFetching 116 files:  75%|███████▌  | 87/116 [55:18<29:31, 61.10s/it]
+[1AFetching 116 files:  76%|███████▌  | 88/116 [55:27<21:17, 45.61s/it]
+[1AFetching 116 files:  77%|███████▋  | 89/116 [55:53<17:52, 39.71s/it]
+[1AFetching 116 files:  78%|███████▊  | 90/116 [56:00<12:53, 29.74s/it]
+[1AFetching 116 files:  78%|███████▊  | 91/116 [56:39<13:34, 32.58s/it]
+[1AFetching 116 files:  79%|███████▉  | 92/116 [56:59<11:33, 28.88s/it]
+[1AFetching 116 files:  80%|████████  | 93/116 [57:24<10:33, 27.54s/it]
+[1AFetching 116 files:  81%|████████  | 94/116 [59:22<20:06, 54.84s/it]
+[1AFetching 116 files:  82%|████████▏ | 95/116 [1:00:43<21:54, 62.61s/it]
+[1AFetching 116 files:  83%|████████▎ | 96/116 [1:00:46<14:54, 44.74s/it]
+[1AFetching 116 files:  84%|████████▎ | 97/116 [1:01:06<11:46, 37.20s/it]
+[1AFetching 116 files:  84%|████████▍ | 98/116 [1:01:41<11:01, 36.73s/it]
+[1AFetching 116 files:  85%|████████▌ | 99/116 [1:02:36<11:56, 42.15s/it]
+[1AFetching 116 files:  86%|████████▌ | 100/116 [1:03:02<09:54, 37.18s/it]
+[1AFetching 116 files:  87%|████████▋ | 101/116 [1:03:19<07:46, 31.09s/it][download] volume checkpoint committed
+
+[1AFetching 116 files:  88%|████████▊ | 102/116 [1:03:55<07:38, 32.78s/it]
+[1AFetching 116 files:  89%|████████▉ | 103/116 [1:03:57<05:03, 23.36s/it]
+[1AFetching 116 files:  90%|████████▉ | 104/116 [1:03:57<03:16, 16.40s/it]
+[1AFetching 116 files:  91%|█████████ | 105/116 [1:03:57<02:07, 11.62s/it]
+[1AFetching 116 files:  91%|█████████▏| 106/116 [1:03:58<01:22,  8.24s/it]
+[1AFetching 116 files:  92%|█████████▏| 107/116 [1:03:58<00:53,  5.93s/it]
+[1AFetching 116 files:  93%|█████████▎| 108/116 [1:03:59<00:35,  4.42s/it]
+[1AFetching 116 files:  94%|█████████▍| 109/116 [1:04:00<00:22,  3.28s/it]
+[1AFetching 116 files:  95%|█████████▍| 110/116 [1:04:18<00:46,  7.72s/it]
+[1AFetching 116 files:  96%|█████████▌| 111/116 [1:04:24<00:36,  7.28s/it]
+[1AFetching 116 files:  97%|█████████▋| 112/116 [1:04:32<00:29,  7.46s/it]
+[1AFetching 116 files:  97%|█████████▋| 113/116 [1:04:52<00:34, 11.36s/it]
+[1AFetching 116 files:  98%|█████████▊| 114/116 [1:05:06<00:23, 11.91s/it]
+[1AFetching 116 files:  99%|█████████▉| 115/116 [1:05:07<00:08,  8.89s/it]
+[1AFetching 116 files: 100%|██████████| 116/116 [1:05:09<00:00,  6.64s/it]
+[1AFetching 116 files: 100%|██████████| 116/116 [1:05:09<00:00, 33.70s/it]
+[32m✓ Downloaded[0m
+  path: /__modal/volumes/vo-8MZo6KagmtpHw4PuRzDb4O/hub/models--nvidia--Kimi-K3-NVFP4/snapshots/b2428a0b83a8b712ff2e1a8448a103d4175341f1
+[download] fetching RadixArk/Kimi-K3-DSpark
+
+[1AFetching 7 files:   0%|          | 0/7 [00:00<?, ?it/s]Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+
+[1AFetching 7 files:  14%|█▍        | 1/7 [00:00<00:01,  3.63it/s]
+[1AFetching 7 files:  86%|████████▌ | 6/7 [00:00<00:00, 15.70it/s]
+[1AFetching 7 files: 100%|██████████| 7/7 [00:19<00:00,  2.76s/it]
+[32m✓ Downloaded[0m
+  path: /__modal/volumes/vo-8MZo6KagmtpHw4PuRzDb4O/hub/models--RadixArk--Kimi-K3-DSpark/snapshots/3c5bac301d9cf392706189d82ed947feca6c2f0f
+[download] all artifacts cached
+Stopping app - local entrypoint completed.
+[modal-client] 2026-09-24T13:24:23-0400 Timed out waiting for final app logs.
+✓ App completed. View run at 
+https://modal.com/apps/aviralmansingka/main/ap-GLVFgTL7dGKOuBleHPoO6u
