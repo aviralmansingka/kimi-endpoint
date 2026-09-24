@@ -42,13 +42,11 @@ def test_argv():
 
 def test_readiness():
     process = Mock(args=["python"], poll=Mock(return_value=17))
-    stderr = io.StringIO("".join(f"line {i}\n" for i in range(60)))
     with patch("serve.time.sleep") as sleep, patch("requests.get") as get:
         try:
-            serve.wait_ready(process, stderr=stderr)
+            serve.wait_ready(process)
         except subprocess.CalledProcessError as exc:
             assert exc.returncode == 17
-            assert exc.stderr.splitlines() == [f"line {i}" for i in range(10, 60)]
         else:
             raise AssertionError("Dead child did not fail immediately")
         sleep.assert_not_called()

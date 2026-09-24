@@ -154,23 +154,20 @@ def build_server_cmd(port):
     return cmd
 
 
-def check_running(p: subprocess.Popen, stderr=None):
+def check_running(p: subprocess.Popen):
     if (rc := p.poll()) is not None:
-        tail = ""
-        if stderr is not None:
-            stderr.seek(0)
-            tail = "".join(deque(stderr, maxlen=50))
-        print(f"SGLang exited with return code {rc}; last 50 stderr lines:\n{tail}", flush=True)
-        raise subprocess.CalledProcessError(rc, cmd=p.args, stderr=tail)
+        # Full output streams to container logs; surface the exit code loudly here.
+        print(f"SGLang exited with return code {rc}; see container logs for the tail", flush=True)
+        raise subprocess.CalledProcessError(rc, cmd=p.args)
 
 
-def wait_ready(process: subprocess.Popen, timeout: int = 90 * MINUTES, stderr=None):
+def wait_ready(process: subprocess.Popen, timeout: int = 90 * MINUTES):
     import requests
 
     deadline = time.time() + timeout
     while time.time() < deadline:
         # A dead child is not a transient connection failure: propagate immediately.
-        check_running(process, stderr)
+        check_running(process)
         try:
             requests.get(f"http://127.0.0.1:{PORT}/health").raise_for_status()
             return
@@ -219,10 +216,12 @@ class SGLang:
     def startup(self):
         """Start the SGLang server, block until healthy, then warm it up."""
         cmd = build_server_cmd(PORT)
-        # A file avoids pipe backpressure while retaining diagnostics if startup dies.
-        with tempfile.TemporaryFile(mode="w+", encoding="utf-8", errors="replace") as stderr:
-            self.process = subprocess.Popen(cmd, env=os.environ, stderr=stderr)
-            wait_ready(self.process, stderr=stderr)
+        # Merge SGLang's stderr (Python logging) into stdout so ALL output
+        # streams to container logs — Modal drains container stdout, so there
+        # is no pipe backpressure. This keeps `modal container logs` and the
+        # app page live during the ~15-min weight load.
+        self.process = subprocess.Popen(cmd, env=os.environ, stderr=subprocess.STDOUT)
+        wait_ready(self.process)
         warmup()
 
     @modal.exit()
