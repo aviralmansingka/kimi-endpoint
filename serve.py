@@ -1,14 +1,21 @@
-"""Kimi-K2.6 inference endpoint on Modal (single-file).
+"""Kimi-K3 inference endpoint on Modal (single-file).
 
-Adapted from modal-projects/autoinference deployments/kimi_k2_6_8xb200, with
-versions bumped to latest: SGLang v0.5.20, autoinference-utils 0.2.6, and
-Modal's current client (installed via inline script metadata).
+Adapted from the autoinference serve template, updated for Kimi-K3 per
+nvidia/Kimi-K3-NVFP4's validated SGLang recipe (8xB300, DSPARK speculation):
+https://huggingface.co/nvidia/Kimi-K3-NVFP4
 
 Deploy (scale-to-zero):
     uv run modal deploy serve.py
 
 Keep one container always warm:
     MIN_CONTAINERS=1 uv run modal deploy serve.py
+
+Notes:
+- First boot downloads ~1.6 TB of weights into the `huggingface-cache`
+  volume; startup can take an hour or more. Later boots reuse the volume.
+- Requires the `lmsysorg/sglang:dev-dev-kimi-k3-nvfp4` image (CUDA 13 build
+  from SGLang PR #35077) — released SGLang cannot load this checkpoint yet.
+- Drop the three DSPARK `--speculative-*` args to serve without speculation.
 """
 
 import os
@@ -37,15 +44,15 @@ HF_IMAGE_ENV = {
     "HF_HUB_ENABLE_HF_TRANSFER": "1",
 }
 
-MODEL_NAME = "nvidia/Kimi-K2.6-NVFP4"
-SPECULATOR_PATH = "lightseekorg/kimi-k2.6-eagle3"
+MODEL_NAME = "nvidia/Kimi-K3-NVFP4"
+SPECULATOR_PATH = "RadixArk/Kimi-K3-DSpark"
 app = modal.App(name=app_name_from_model(MODEL_NAME))
 
-GPU_TYPE = "B200"
+GPU_TYPE = "B300"  # 288 GB each; 8x is the validated TP8 config for K3
 N_GPUS = 8
 GPU = f"{GPU_TYPE}:{N_GPUS}"
 
-SGLANG_IMAGE_TAG = "lmsysorg/sglang:v0.5.20"
+SGLANG_IMAGE_TAG = "lmsysorg/sglang:dev-dev-kimi-k3-nvfp4"
 
 DG_CACHE_DIR = "/root/dg-cache"
 DG_CACHE_VOLUME_NAME = "dg-cache"
@@ -54,7 +61,7 @@ MIN_CONTAINERS = int(os.getenv("MIN_CONTAINERS", "0"))
 SCALEDOWN_WINDOW = 10 * MINUTES
 PROXY_REGIONS = os.getenv("PROXY_REGIONS", "us-west").split(",")
 TARGET_INPUTS = 32
-STARTUP_TIMEOUT = 1800
+STARTUP_TIMEOUT = 2 * 60 * MINUTES  # first boot downloads ~1.6 TB
 
 HF_CACHE_VOL = modal.Volume.from_name(HF_CACHE_VOLUME_NAME)
 DG_CACHE_VOL = modal.Volume.from_name(DG_CACHE_VOLUME_NAME, create_if_missing=True)
@@ -90,26 +97,17 @@ with serving_image.imports():
 
 SERVER_ARGS = {
     "--trust-remote-code": "",
-    "--tool-call-parser": "kimi_k2",
-    "--reasoning-parser": "kimi_k2",
-    "--dist-timeout": "3600",
-    "--dtype": "bfloat16",
-    "--kv-cache-dtype": "fp8_e4m3",
-    "--quantization": "modelopt_fp4",
-    "--attention-backend": "tokenspeed_mla",
+    "--tool-call-parser": "kimi_k3",
+    "--reasoning-parser": "kimi_k3",
+    "--dcp-size": str(N_GPUS),
+    "--mem-fraction-static": "0.85",
+    # Required, not optional: flashinfer_cutlass has no SiTU kernel for the
+    # routed experts and auto-resolution never picks the TRT-LLM path.
     "--moe-runner-backend": "flashinfer_trtllm",
-    "--mem-fraction-static": "0.7",
-    "--chunked-prefill-size": "65536",
-    "--max-running-requests": str(TARGET_INPUTS),
-    "--cuda-graph-max-bs": str(TARGET_INPUTS),
-    "--collect-tokens-histogram": "",
-    "--speculative-algorithm": "EAGLE3",
-    "--speculative-num-steps": "5",
-    "--speculative-eagle-topk": "1",
-    "--speculative-num-draft-tokens": "6",
-    "--speculative-draft-model-quantization": "unquant",
-    "--speculative-draft-attention-backend": "trtllm_mha",
-    "--skip-server-warmup": "",
+    # DSPARK speculative decoding (cookbook default operating point).
+    "--speculative-algorithm": "DSPARK",
+    "--speculative-dspark-block-size": "7",
+    "--enable-linear-replayssm-spec": "",
 }
 
 WARMUP_PAYLOAD = {
@@ -148,7 +146,7 @@ class Server:
             worker_port=DEFAULT_PORT,
             tp=N_GPUS,
             extra_server_args=SERVER_ARGS,
-            health_timeout=30 * MINUTES,
+            health_timeout=90 * MINUTES,  # covers first-boot weight download
             health_poll_interval=10.0,
         )
         self.endpoint.start()
@@ -162,7 +160,7 @@ class Server:
             self.endpoint.health_check,
             on_failure=lambda: modal.experimental.stop_fetching_inputs(),
         )
-        print("Kimi-K2.6 (8xB200) is ready to serve.")
+        print("Kimi-K3 (8xB300, DSPARK) is ready to serve.")
 
     @modal.exit()
     def stop(self):
