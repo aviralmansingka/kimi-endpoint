@@ -1,0 +1,10 @@
+# Python
+__pycache__/
+*.pyc
+.venv-*/
+venv/
+
+# Large raw benchmark exports (summaries/reports are committed)
+artifacts/**/profile_export_raw.jsonl
+artifacts/**/profile_export.jsonl
+artifacts/**/logs/
