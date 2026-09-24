@@ -11,8 +11,11 @@ Keep one container always warm:
     MIN_CONTAINERS=1 uv run modal deploy serve.py
 
 Notes:
-- First boot downloads ~1.6 TB of weights into the `huggingface-cache`
-  volume; startup can take an hour or more. Later boots reuse the volume.
+- First boot downloads ~1.6 TB of weights into the `kimi-k3-nvfp4-cache`
+  volume mounted at the canonical HF cache path (`/root/.cache/huggingface`);
+  startup can take an hour or more. Later boots reuse the volume.
+  Skip the GPU-hour burn by pre-fetching on CPU instead:
+      uv run modal run serve.py::download-models
 - Requires the `lmsysorg/sglang:dev-dev-kimi-k3-nvfp4` image (CUDA 13 build
   from SGLang PR #35077) — released SGLang cannot load this checkpoint yet.
 - Drop the three DSPARK `--speculative-*` args to serve without speculation.
@@ -20,6 +23,8 @@ Notes:
 
 import os
 import re
+import subprocess
+import threading
 
 # /// script
 # requires-python = ">=3.11"
@@ -36,8 +41,8 @@ def app_name_from_model(model_name: str) -> str:
 MINUTES = 60
 AUTOINFERENCE_UTILS_VERSION = "0.2.6"
 DEFAULT_PORT = 8000
-HF_CACHE_PATH = "/root/hf-cache"
-HF_CACHE_VOLUME_NAME = "huggingface-cache"
+HF_CACHE_PATH = "/root/.cache/huggingface"  # canonical HF cache path
+HF_CACHE_VOLUME_NAME = "kimi-k3-nvfp4-cache"  # dedicated volume for this model
 HF_IMAGE_ENV = {
     "HF_HOME": HF_CACHE_PATH,
     "HF_XET_HIGH_PERFORMANCE": "1",
@@ -63,7 +68,9 @@ PROXY_REGIONS = os.getenv("PROXY_REGIONS", "us-west").split(",")
 TARGET_INPUTS = 32
 STARTUP_TIMEOUT = 2 * 60 * MINUTES  # first boot downloads ~1.6 TB
 
-HF_CACHE_VOL = modal.Volume.from_name(HF_CACHE_VOLUME_NAME)
+HF_CACHE_VOL = modal.Volume.from_name(
+    HF_CACHE_VOLUME_NAME, create_if_missing=True
+)
 DG_CACHE_VOL = modal.Volume.from_name(DG_CACHE_VOLUME_NAME, create_if_missing=True)
 
 serving_image = (
@@ -87,6 +94,47 @@ serving_image = (
     )
     .pip_install(f"autoinference-utils=={AUTOINFERENCE_UTILS_VERSION}")
 )
+
+download_image = (
+    modal.Image.debian_slim(python_version="3.12")
+    .pip_install("huggingface_hub[hf_transfer]")
+    .env(HF_IMAGE_ENV)
+)
+
+
+@app.function(
+    image=download_image,
+    volumes={HF_CACHE_PATH: HF_CACHE_VOL},
+    cpu=4,
+    memory=8 * 1024,
+    timeout=24 * 60 * MINUTES,
+)
+def download_models():
+    """Pre-fetch model artifacts into the HF cache volume on CPU (no GPU burn).
+
+    Commits the volume every 10 minutes so a crash mid-download keeps progress.
+    """
+    stop = threading.Event()
+
+    def _commit_loop():
+        while not stop.wait(10 * MINUTES):
+            HF_CACHE_VOL.commit()
+            print("[download] volume checkpoint committed", flush=True)
+
+    committer = threading.Thread(target=_commit_loop, daemon=True)
+    committer.start()
+    try:
+        for repo in (MODEL_NAME, SPECULATOR_PATH):
+            print(f"[download] fetching {repo}", flush=True)
+            subprocess.run(
+                ["hf", "download", repo], check=True,
+                env={**os.environ, "HF_HOME": HF_CACHE_PATH},
+            )
+    finally:
+        stop.set()
+        HF_CACHE_VOL.commit()
+    print("[download] all artifacts cached", flush=True)
+
 
 with serving_image.imports():
     from autoinference_utils.endpoint import (

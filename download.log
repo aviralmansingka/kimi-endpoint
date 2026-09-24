@@ -1,0 +1,5 @@
+Error: Specify a Modal Function or local entrypoint to run. E.g.
+> modal run serve.py::my_function [..args]
+
+'serve.py' has the following functions and local entrypoints:
+download_models / app.download_models
