@@ -199,6 +199,54 @@ def warmup():
 
 
 app = modal.App(name="kimi-k3")
+
+
+# ## Weights pre-fetch (CPU, no GPU burn)
+
+# The server image runs offline (HF_HUB_OFFLINE=1) once the volume is warm;
+# populate the volume from the Hub with this CPU-only function instead:
+#   modal run serve.py::download_models
+
+download_image = modal.Image.debian_slim(python_version="3.12").pip_install(
+    "huggingface_hub[hf_transfer]"
+)
+
+
+@app.function(
+    image=download_image,
+    volumes={HF_CACHE_PATH: HF_CACHE_VOL},
+    cpu=4,
+    memory=8 * 1024,
+    timeout=24 * 60 * MINUTES,
+)
+def download_models():
+    """Pre-fetch model artifacts into the HF cache volume on CPU (no GPU burn).
+
+    Commits the volume every 10 minutes so a crash mid-download keeps progress.
+    """
+    import threading
+
+    stop = threading.Event()
+
+    def _commit_loop():
+        while not stop.wait(10 * MINUTES):
+            HF_CACHE_VOL.commit()
+            print("[download] volume checkpoint committed", flush=True)
+
+    committer = threading.Thread(target=_commit_loop, daemon=True)
+    committer.start()
+    try:
+        for repo in (MODEL_NAME, SPECULATOR_NAME):
+            print(f"[download] fetching {repo}", flush=True)
+            subprocess.run(
+                ["hf", "download", repo],
+                check=True,
+                env={**os.environ, "HF_HOME": HF_CACHE_PATH},
+            )
+    finally:
+        stop.set()
+        HF_CACHE_VOL.commit()
+    print("[download] all artifacts cached", flush=True)
 PORT = 8000
 
 
