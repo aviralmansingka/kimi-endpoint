@@ -145,6 +145,7 @@ def build_server_cmd(port):
         "--cuda-graph-max-bs",  # only capture CUDA graphs for likely batch sizes
         str(CUDA_GRAPH_MAX_BS),
         "--enable-metrics",  # expose metrics endpoints for telemetry
+        "--enable-cache-report",  # usage carries cached_tokens for AIPerf
         "--decode-log-interval",  # how often to log during decoding, in tokens
         "10",
     ]

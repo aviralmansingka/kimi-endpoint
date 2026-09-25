@@ -17,6 +17,12 @@ assert abs(s["c"] - export["overall_usage_prompt_cache_read_pct"]["avg"] / 100) 
 # usage-derived D agrees with AIPerf's native output_token_throughput
 assert abs(s["D"] - export["output_token_throughput"]["avg"]) / s["D"] < 0.01
 
+# AgentX latency conventions: p90 ITL -> tok/s/user, TTFT percentiles
+assert abs(s["tps_user_p90"] - 1000.0 / export["inter_token_latency"]["p90"]) < 1e-9
+assert s["ttft_p90_s"] == export["time_to_first_token"]["p90"] / 1e3
+assert s["ttft_p50_s"] == export["time_to_first_token"]["p50"] / 1e3
+assert s["tps_user_avg"] == export["output_token_throughput_per_user"]["avg"]
+
 # earnings arithmetic
 expected_hr = (P_IN * s["P"] + P_CACHE * s["C"] + P_OUT * s["D"]) * 3600 / 1e6
 assert abs(s["usd_per_hr"] - expected_hr) < 1e-9

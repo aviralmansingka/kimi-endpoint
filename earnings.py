@@ -7,7 +7,9 @@ Reads the server-reported usage totals — real token counts, including cache
 reads when the run used --cache-report — and prints the measured operating
 point (P fresh prefill / C cache-read / D output, tok/s), the mix (R, c),
 blended price B, and earnings: $/hr while serving, $/MW-yr at usage factor
-U (env, default 0.7).  Prices and node watts come from analyze_chatdist
+U (env, default 0.7).  Latency follows the AgentX conventions: TTFT
+p50/p90/p95 and interactivity in tok/s/user derived from p90 ITL.
+Prices and node watts come from analyze_chatdist
 (same envs, same defaults).  No pass/fail bar — this reports what was earned.
 """
 
@@ -33,6 +35,11 @@ def total(export, name):
     return export[name]["avg"]
 
 
+def flat(export, name, field, default=0.0):
+    """One stat of a distribution metric, 0.0-safe when absent."""
+    return export.get(name, {}).get(field, default)
+
+
 def operating_point(export):
     """Server-reported token totals for the run, split fresh/cached/out."""
     prompt = total(export, "total_usage_prompt_tokens")
@@ -48,7 +55,7 @@ def operating_point(export):
 
 
 def summarize(export, u):
-    """Measured operating point + earnings at usage factor u."""
+    """Measured operating point, earnings at u, and AgentX latency stats."""
     pt = operating_point(export)
     seconds = pt["duration"]
     P, C, D = pt["fresh"] / seconds, pt["cached"] / seconds, pt["out"] / seconds
@@ -56,14 +63,21 @@ def summarize(export, u):
     c = pt["cached"] / pt["prompt"] if pt["prompt"] else 0.0
     B = blended_price(R, c)
     usd_per_hr = (P_IN * P + P_CACHE * C + P_OUT * D) * 3600 / 1e6
+    itl_p90 = flat(export, "inter_token_latency", "p90")
     return {
         **pt, "P": P, "C": C, "D": D, "R": R, "c": c, "B": B,
         "usd_per_hr": usd_per_hr,
         "per_mw_yr_u": u * usd_per_hr * 8760 / (NODE_KW / 1000),
-        "native_out_tps": export.get("output_token_throughput", {}).get("avg"),
-        "ttft_p95_s": export.get("time_to_first_token", {}).get("p95", 0) / 1e3,
-        "itl_p95_ms": export.get("inter_token_latency", {}).get("p95", 0),
-        "error_rate": export.get("request_error_rate", {}).get("avg", 0.0),
+        "native_out_tps": flat(export, "output_token_throughput", "avg"),
+        "tps_user_avg": flat(export, "output_token_throughput_per_user", "avg"),
+        "ttft_p50_s": flat(export, "time_to_first_token", "p50") / 1e3,
+        "ttft_p90_s": flat(export, "time_to_first_token", "p90") / 1e3,
+        "ttft_p95_s": flat(export, "time_to_first_token", "p95") / 1e3,
+        "itl_p90_ms": itl_p90,
+        "itl_p95_ms": flat(export, "inter_token_latency", "p95"),
+        # AgentX interactivity: per-client speed from p90 ITL
+        "tps_user_p90": 1000.0 / itl_p90 if itl_p90 else 0.0,
+        "error_rate": flat(export, "request_error_rate", "avg"),
     }
 
 
@@ -81,8 +95,12 @@ def report(s, u):
         f"R={s['R']:.1f} c={s['c']:.3f} | B=${s['B']:.2f}/M out tok",
         f"earn ${s['usd_per_hr']:.2f}/hr serving -> "
         f"${s['per_mw_yr_u'] / 1e6:,.1f}M/MW-yr @u{u}  [{NODE_KW:g} kW node]",
-        f"TTFT p95={s['ttft_p95_s']:.1f}s  ITL p95={s['itl_p95_ms']:.1f}ms  "
-        f"errors={s['error_rate']:.1f}%",
+        f"TTFT p50/p90/p95={s['ttft_p50_s']:.1f}/{s['ttft_p90_s']:.1f}/"
+        f"{s['ttft_p95_s']:.1f}s  ITL p90={s['itl_p90_ms']:.1f}ms -> "
+        f"{s['tps_user_p90']:.1f} tok/s/user"
+        + (f"  [native avg {s['tps_user_avg']:.1f}]"
+           if s["tps_user_avg"] else "")
+        + f"  errors={s['error_rate']:.1f}%",
     ]
     if s["native_out_tps"] and abs(s["D"] - s["native_out_tps"]) > 0.05 * s["D"]:
         lines.append("WARNING: usage-derived D disagrees with native "
