@@ -23,12 +23,14 @@ GPU=H100 MIN_CONTAINERS=1 modal deploy serve_cheap.py     # note the URL
 URL=<that-url>
 until curl -sf --max-time 10 "$URL/health" >/dev/null; do sleep 20; done && echo ready
 
-# 3) The run (~10 min, bounded by --duration; use a FRESH artifact dir each time)
+# 3) The run (~10 min, bounded by --duration; use a FRESH artifact dir each time;
+#    --rows 1000 so the sequential dataset doesn't fall short of the window —
+#    AIPerf wraps it anyway, but only after exhausting the rows)
 uv run --python 3.12 --with 'aiperf==0.13.0' --with httpx python bench_agentic.py \
     --base-url "$URL" --model Qwen/Qwen3-30B-A3B-Instruct-2507-FP8 \
     --pattern shared-prefix --prefix-tokens 19000 --tail-tokens 1000 \
     --output-tokens 400 --concurrency 32 --duration 600 --num-requests 0 \
-    --cache-report --artifact-dir artifacts/bench-h100-shared
+    --rows 1000 --cache-report --artifact-dir artifacts/bench-h100-shared-v2
 tail -f artifacts/bench-h100-shared/runner.log   # (2nd terminal) live progress
 
 # 4) The answer
@@ -61,9 +63,14 @@ natural text, and multi-turn session shapes.
 
 ## Caveats carried from the AIPerf line
 
+- The server must pass `--enable-cache-report` (serve_cheap.py does since
+  2026-09-26) or the export contains no cache-read tokens and earnings.py
+  assumes C=0 — which **overstates earnings ~4x** at this mix (billing cache
+  reads as fresh input).  The 2026-09-25 walkthrough run hit exactly this:
+  $10.83/hr as-measured vs ~$2.6/hr cache-corrected.
+- Dataset token sizes are chars/4 approximations — measured R drifts from
+  the knob (R=37 when the knobs aimed at 50).  The server's usage is truth.
 - Synthetic padding text: speculative-decode acceptance and token
   compression differ from natural text — budget ±10–20% on the physics.
-- `--cache-report` is required for C; without it the export has no
-  cache-read tokens and earnings.py assumes C=0 (and says so).
 - Tool-loop and fan-out patterns need the adapters in bench_agentic.py;
   shared-prefix and multi-turn-growth are native AIPerf.

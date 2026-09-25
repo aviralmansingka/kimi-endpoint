@@ -88,6 +88,7 @@ class SGLang:
             "--kv-cache-dtype", "fp8_e4m3",   # ~26 GB KV for the c=0.95 cell
             "--mem-fraction-static", "0.9",
             "--enable-metrics",
+            "--enable-cache-report",  # usage carries cached_tokens for AIPerf
         ]
         self.process = subprocess.Popen(cmd, env=os.environ)
         wait_ready(self.process, STARTUP_TIMEOUT)
