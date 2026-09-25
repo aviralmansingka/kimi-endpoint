@@ -7,26 +7,36 @@ prices earn at u=0.7, at the 50:1 / 95%-cache working mix?**  Cost ≈ $1,
 ~15 min wall (the weights volume is already warm from the 2026-09-25 run).
 
 ```bash
-# AIPerf client (needs Python 3.11–3.13)
-python3.13 -m venv .venv-aiperf && source .venv-aiperf/bin/activate
-pip install 'aiperf==0.13.0' httpx
+# 0) Client sanity (free). Pin Python 3.12: uv otherwise picks 3.14, where
+#    pyzmq has no wheels and its source build fails on libzmq.
+uv run --python 3.12 --with 'aiperf==0.13.0' --with httpx aiperf --version
 
-# Server (~3–5 min boot from the warm volume)
-GPU=H100 MIN_CONTAINERS=1 modal deploy serve_cheap.py      # note the URL
+# 1) Free dry-run — prints the dataset row and the exact aiperf command, no network.
+uv run --python 3.12 --with 'aiperf==0.13.0' --with httpx python bench_agentic.py \
+    --base-url http://dryrun.invalid --model Qwen/Qwen3-30B-A3B-Instruct-2507-FP8 \
+    --pattern shared-prefix --prefix-tokens 19000 --tail-tokens 1000 \
+    --output-tokens 400 --concurrency 32 --duration 600 --num-requests 0 \
+    --cache-report --artifact-dir artifacts/bench-dryrun --dry-run
 
-# Load: shared-prefix mix ~ R=50, c=0.95 (19k cached prefix + 1k fresh tail,
-# ~400-token outputs), 32 concurrent, bounded to 10 minutes
-python bench_agentic.py --base-url "$URL" \
-    --model Qwen/Qwen3-30B-A3B-Instruct-2507-FP8 \
+# 2) Server (~3–5 min from the warm weights volume)
+GPU=H100 MIN_CONTAINERS=1 modal deploy serve_cheap.py     # note the URL
+URL=<that-url>
+until curl -sf --max-time 10 "$URL/health" >/dev/null; do sleep 20; done && echo ready
+
+# 3) The run (~10 min, bounded by --duration; use a FRESH artifact dir each time)
+uv run --python 3.12 --with 'aiperf==0.13.0' --with httpx python bench_agentic.py \
+    --base-url "$URL" --model Qwen/Qwen3-30B-A3B-Instruct-2507-FP8 \
     --pattern shared-prefix --prefix-tokens 19000 --tail-tokens 1000 \
     --output-tokens 400 --concurrency 32 --duration 600 --num-requests 0 \
     --cache-report --artifact-dir artifacts/bench-h100-shared
+tail -f artifacts/bench-h100-shared/runner.log   # (2nd terminal) live progress
 
-# Earnings (Qwen prices; one H100 SXM at 700W TDP)
+# 4) The answer
 P_IN=0.048 P_CACHE=0.0048 P_OUT=0.193 NODE_KW=0.7 \
-    python earnings.py artifacts/bench-h100-shared
+    uv run --python 3.12 --with tiktoken python earnings.py artifacts/bench-h100-shared
 
-modal app stop qwen3-smoke --yes      # teardown, stops billing
+# 5) Teardown — stops billing
+modal app stop qwen3-smoke --yes
 ```
 
 The answer line: `earn $X/hr serving -> $Y M/MW-yr @u0.7`.
