@@ -4,6 +4,12 @@ __pycache__/
 .venv-*/
 venv/
 
+# Local harness artifacts (regenerable / personal)
+corpus.jsonl
+results.json
+download.log
+tok/.cache/
+
 # Large raw benchmark exports (summaries/reports are committed)
 artifacts/**/profile_export_raw.jsonl
 artifacts/**/profile_export.jsonl
