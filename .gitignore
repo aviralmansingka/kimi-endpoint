@@ -9,6 +9,7 @@ corpus.jsonl
 results.json
 download.log
 tok/.cache/
+artifacts/bench-*/
 
 # Large raw benchmark exports (summaries/reports are committed)
 artifacts/**/profile_export_raw.jsonl

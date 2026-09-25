@@ -1,0 +1,88 @@
+{
+  "aiperf_version": "0.13.0",
+  "request_throughput": {
+    "unit": "requests/sec",
+    "avg": 0.7400945513961591
+  },
+  "time_to_first_token": {
+    "unit": "ms",
+    "avg": 1550.7305765416668,
+    "p1": 291.87347518,
+    "p5": 296.77990185,
+    "p10": 304.93160439999997,
+    "p25": 331.05803149999997,
+    "p50": 359.80391699999996,
+    "p75": 537.43666675,
+    "p90": 3521.6236211999994,
+    "p95": 3521.677134,
+    "p99": 14802.715661659993,
+    "min": 290.789792,
+    "max": 18172.375042,
+    "std": 3619.298643700028,
+    "count": 24,
+    "sum": 37217.533836999995
+  },
+  "inter_token_latency": {
+    "unit": "ms",
+    "avg": 4.253524329289215,
+    "p1": 2.5730792411764707,
+    "p5": 2.8048597894117644,
+    "p10": 2.8227358960784312,
+    "p25": 2.94851756372549,
+    "p50": 3.163891176470588,
+    "p75": 3.497046568627451,
+    "p90": 4.069453365882353,
+    "p95": 4.136939338039215,
+    "p99": 22.172460395617637,
+    "min": 2.504166505882353,
+    "max": 27.558123616666666,
+    "std": 4.877302097044126,
+    "count": 24,
+    "sum": 102.08458390294116
+  },
+  "output_token_throughput": {
+    "unit": "tokens/sec",
+    "avg": 183.45093692732294
+  },
+  "benchmark_duration": {
+    "unit": "sec",
+    "avg": 32.422726656
+  },
+  "total_isl": {
+    "unit": "tokens",
+    "avg": 64948.0
+  },
+  "total_osl": {
+    "unit": "tokens",
+    "avg": 5949.0
+  },
+  "is_complete": true,
+  "total_usage_prompt_cache_read_tokens": {
+    "unit": "tokens",
+    "avg": 44480.0
+  },
+  "completed_request_count": {
+    "unit": "requests",
+    "avg": 24.0
+  },
+  "request_error_rate": {
+    "unit": "%",
+    "avg": 0.0
+  },
+  "total_usage_completion_tokens": {
+    "unit": "tokens",
+    "avg": 5949.0
+  },
+  "total_usage_prompt_tokens": {
+    "unit": "tokens",
+    "avg": 64948.0
+  },
+  "overall_usage_prompt_cache_read_pct": {
+    "unit": "%",
+    "avg": 68.48555767691076
+  },
+  "input_token_throughput": {
+    "unit": "tokens/sec",
+    "avg": 2002.819205169906
+  }
+}
