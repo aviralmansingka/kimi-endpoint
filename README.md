@@ -54,19 +54,6 @@ Each cell line prints the measured operating point (`D P C`, measured
 - `SLO fail` means throughput at that concurrency isn't sellable at those
   latencies, whatever the token rate.
 
-## Cheap verification (no B300 time)
-
-Verify the whole harness on one A100-80GB ($2.50/hr) with
-Qwen3-30B-A3B-Instruct-2507-FP8 at its OpenRouter prices — full smoke for
-~$0.85 (~$1.15 first run, incl. the one-time 31 GB weight pull):
-
-    MIN_CONTAINERS=1 modal deploy serve_cheap.py   # note the URL
-    ./run_qwen_smoke.sh <URL>                       # TOK/P_*/NODE_KW envs
-    modal app stop qwen3-smoke                      # teardown, stops billing
-
-The envs swap tokenizer, prices, and node watts, so B and the earnings come
-out in Qwen terms; machinery under test is identical.
-
 ## Caveats
 
 - Keep `--ks` ≤ 64 unless `cuda-graph-max-bs` is raised in `serve.py`.
