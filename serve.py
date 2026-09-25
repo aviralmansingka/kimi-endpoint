@@ -35,7 +35,9 @@ sglang_image = (
     )
     .run_commands(
         # Raise uvicorn keep-alive so long streaming responses aren't cut.
-        "sed -i 's/timeout_keep_alive=5/timeout_keep_alive=300/g'"
+        # 1800s matches the managed-endpoint recipe's long-stream budget
+        # (their private override_eof_timeout=1800; no public SDK equivalent).
+        "sed -i 's/timeout_keep_alive=5/timeout_keep_alive=1800/g'"
         " /sgl-workspace/sglang/python/sglang/srt/entrypoints/http_server.py"
         " || true",
         # Modal requires an empty mountpoint. Build time has no mounted volume.
@@ -199,9 +201,15 @@ app = modal.App(name="kimi-k3")
 PORT = 8000
 
 
+HOST_CPU = 16  # explicit reservations matching the managed Kimi-K3 recipe:
+HOST_MEMORY_MIB = 1024 * 1024  # 1 TiB host RAM feeds parallel weight loading
+
+
 @app.server(
     image=sglang_image,
     gpu=GPU,
+    cpu=HOST_CPU,
+    memory=HOST_MEMORY_MIB,
     volumes={HF_CACHE_PATH: HF_CACHE_VOL, DG_CACHE_PATH: DG_CACHE_VOL},
     min_containers=MIN_CONTAINERS,
     startup_timeout=STARTUP_TIMEOUT,
