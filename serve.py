@@ -130,6 +130,19 @@ STARTUP_TIMEOUT = 90 * MINUTES  # first boot loads ~1.6 TB from the Volume
 # translation), so the HICACHE variant drops DSPARK — acceptable because the
 # AgentX run was demand-limited (174 out tok/s), not decode-limited.  Host
 # pool in GiB (overrides --hicache-ratio); 512 of the 1 TiB host reservation.
+#
+# Modal imports this module twice — once at deploy time (shell env visible)
+# and once inside the container (shell env gone).  A shell env var therefore
+# cannot toggle anything read by container code; the decision must cross
+# the boundary as a container secret.  run4's first boot shipped HICACHE=1
+# into a server that booted enable_hierarchical_cache=False for exactly
+# this reason.
+HICACHE_SECRET = modal.Secret.from_dict(
+    {
+        "HICACHE": os.getenv("HICACHE", "0"),
+        "HICACHE_SIZE": os.getenv("HICACHE_SIZE", "512"),
+    }
+)
 ENABLE_HICACHE = os.getenv("HICACHE", "0") == "1"
 HICACHE_SIZE_GIB = os.getenv("HICACHE_SIZE", "512")
 
@@ -272,6 +285,7 @@ HOST_MEMORY_MIB = 1024 * 1024  # 1 TiB host RAM feeds parallel weight loading
     memory=HOST_MEMORY_MIB,
     volumes={HF_CACHE_PATH: HF_CACHE_VOL, DG_CACHE_PATH: DG_CACHE_VOL},
     min_containers=MIN_CONTAINERS,
+    secrets=[HICACHE_SECRET],  # ship the deploy-time HICACHE decision in-container
     startup_timeout=STARTUP_TIMEOUT,
     port=PORT,  # wrapped code must listen on this port
     routing_region=ROUTING_REGION,  # location of proxies, should be close to region
