@@ -125,6 +125,14 @@ TARGET_INPUTS = 32
 CUDA_GRAPH_MAX_BS = 32  # Align graph capture with the Modal concurrency target.
 STARTUP_TIMEOUT = 90 * MINUTES  # first boot loads ~1.6 TB from the Volume
 
+# HiCache (L2 host-memory KV offload), env-toggled.  HiCache with DCP > 1
+# rejects speculative decoding (the draft-model host pool has no DCP index
+# translation), so the HICACHE variant drops DSPARK — acceptable because the
+# AgentX run was demand-limited (174 out tok/s), not decode-limited.  Host
+# pool in GiB (overrides --hicache-ratio); 512 of the 1 TiB host reservation.
+ENABLE_HICACHE = os.getenv("HICACHE", "0") == "1"
+HICACHE_SIZE_GIB = os.getenv("HICACHE_SIZE", "512")
+
 
 def build_server_cmd(port):
     """The exact launch argv shared by GPU startup and CPU verification."""
@@ -149,7 +157,10 @@ def build_server_cmd(port):
         "--decode-log-interval",  # how often to log during decoding, in tokens
         "10",
     ]
-    for flags in (SERVER_ARGS, speculative_config):
+    if ENABLE_HICACHE:
+        cmd += ["--enable-hierarchical-cache", "--hicache-size", HICACHE_SIZE_GIB]
+    flag_groups = (SERVER_ARGS, {} if ENABLE_HICACHE else speculative_config)
+    for flags in flag_groups:
         for key, value in flags.items():
             cmd.append("--" + key.removeprefix("--"))
             if value is not None:
