@@ -140,11 +140,14 @@ STARTUP_TIMEOUT = 90 * MINUTES  # first boot loads ~1.6 TB from the Volume
 HICACHE_SECRET = modal.Secret.from_dict(
     {
         "HICACHE": os.getenv("HICACHE", "0"),
-        "HICACHE_SIZE": os.getenv("HICACHE_SIZE", "512"),
+        "HICACHE_SIZE": os.getenv("HICACHE_SIZE", "64"),
     }
 )
 ENABLE_HICACHE = os.getenv("HICACHE", "0") == "1"
-HICACHE_SIZE_GIB = os.getenv("HICACHE_SIZE", "512")
+# hicache_size is PER-RANK under DCP: attempt2 booted 512 GB x 8 ranks =
+# 4 TB aggregate on the 1 TiB host and never went healthy.  64 x 8 = 512
+# GiB aggregate is the intended total, with headroom for load buffers.
+HICACHE_SIZE_GIB = os.getenv("HICACHE_SIZE", "64")
 
 
 def build_server_cmd(port):
