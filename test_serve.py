@@ -20,7 +20,10 @@ def test_argv():
         "--dcp-size": "8",
         "--max-mamba-cache-size": "160",
         "--chunked-prefill-size": "16384",
-        "--cuda-graph-max-bs": "32",
+        # nightly split --cuda-graph-max-bs into -decode/-prefill; we capture
+        # decode graphs only (see build_server_cmd)
+        "--cuda-graph-max-bs-decode": "32",
+        "--mem-fraction-static": "0.90",
     }.items():
         assert cmd.count(flag) == 1
         assert cmd[cmd.index(flag) + 1] == value
@@ -29,6 +32,10 @@ def test_argv():
         i = cmd.index(flag)
         assert i == len(cmd) - 1 or cmd[i + 1].startswith("--")
     assert "--max-running-requests" not in cmd
+    # HiCache is the default deployment shape (run5 planning): argv carries
+    # it and DSPARK together in the pinned nightly (#35221).
+    assert "--enable-hierarchical-cache" in cmd
+    assert "--cuda-graph-max-bs" not in cmd  # old flag must not resurface
     for flags in (serve.SERVER_ARGS, serve.speculative_config):
         for key, value in flags.items():
             flag = "--" + key.removeprefix("--")

@@ -22,11 +22,17 @@ MINUTES = 60  # seconds
 
 # ## Container image
 
-# The `lmsysorg/sglang:dev-dev-kimi-k3-nvfp4` image (CUDA 13 build from
-# SGLang PR #35077) is the only published build that can load the NVFP4
-# checkpoint; released SGLang versions cannot. Do not substitute a stock tag.
+# Pinned dated nightly-dev: 2026-09-28, commit 81f27fb3, CUDA 13. Main now
+# contains both prerequisites this deployment needs: #3507 (ModelOpt mixed
+# NVFP4/FP8 checkpoint loading — previously only the dev-dev PR image had it)
+# and #35221 (HiCache with DCP + DSPARK together). NOTE: the nightly-cu134
+# tag family is arm64-ONLY — the 20260928 cu134 tag failed Modal's build with
+# "image architecture arm64 not supported". Use the nightly-dev-cu13 family,
+# which publishes multi-arch (amd64+arm64) indexes. Pin the DATED tag, never
+# the floating one, so deploys are reproducible; move it deliberately,
+# re-running `verify` and a boot test each time.
 
-SGLANG_IMAGE_TAG = "lmsysorg/sglang:dev-dev-kimi-k3-nvfp4"
+SGLANG_IMAGE_TAG = "lmsysorg/sglang:nightly-dev-cu13-20260928-81f27fb3"
 
 sglang_image = (
     modal.Image.from_registry(SGLANG_IMAGE_TAG)
@@ -105,9 +111,14 @@ SERVER_ARGS = {
     "--reasoning-parser": "kimi_k3",
     "--dcp-size": str(N_GPUS),
     # RadixArk recipe values for Mamba cache capacity and chunked prefill.
+    # mem-fraction raised 0.85 -> 0.90 after run3: the 2.46M-token KV pool
+    # thrashed (58.8M evicted tokens / ~940s) while ~31 GB/GPU sat free at
+    # startup. +0.05 ~= +14 GB/GPU for the DCP-sharded KV pool, still leaving
+    # prefill-activation headroom for 16k-token chunks. If 16k-chunk prefill
+    # spikes OOM, step back toward 0.88 before touching anything else.
     "--max-mamba-cache-size": "160",
     "--chunked-prefill-size": "16384",
-    "--mem-fraction-static": "0.85",
+    "--mem-fraction-static": "0.90",
     # Required, not optional: flashinfer_cutlass has no SiTU kernel for the
     # routed experts and auto-resolution never picks the TRT-LLM path.
     "--moe-runner-backend": "flashinfer_trtllm",
@@ -125,10 +136,16 @@ TARGET_INPUTS = 32
 CUDA_GRAPH_MAX_BS = 32  # Align graph capture with the Modal concurrency target.
 STARTUP_TIMEOUT = 90 * MINUTES  # first boot loads ~1.6 TB from the Volume
 
-# HiCache (L2 host-memory KV offload), env-toggled.  HiCache with DCP > 1
-# rejects speculative decoding (the draft-model host pool has no DCP index
-# translation), so the HICACHE variant drops DSPARK — acceptable because the
-# AgentX run was demand-limited (174 out tok/s), not decode-limited.  Host
+# HiCache (L2 host-memory KV offload).  DEFAULT ON as of run5 planning:
+# run3's eviction thrash (one ~150k-token context destroyed every ~2.4s,
+# repaid as ~17s re-prefills) is the diagnosed capacity limiter, so the
+# host tier is now the default deployment shape.  Deploy with HICACHE=0
+# for a device-pool-only comparison run.
+# DSPARK stays on in HICACHE mode: #35221 added DCP index translation for
+# the draft-model host pool, so the old reject-the-combo restriction is
+# gone in the pinned nightly.  The draft model's KV now offloads too, so
+# watch host-pool accounting (`--hicache-size` is per-rank under DCP) on
+# the first boots.  Host
 # pool in GiB (overrides --hicache-ratio); 512 of the 1 TiB host reservation.
 #
 # Modal imports this module twice — once at deploy time (shell env visible)
@@ -139,11 +156,15 @@ STARTUP_TIMEOUT = 90 * MINUTES  # first boot loads ~1.6 TB from the Volume
 # this reason.
 HICACHE_SECRET = modal.Secret.from_dict(
     {
-        "HICACHE": os.getenv("HICACHE", "0"),
+        "HICACHE": os.getenv("HICACHE", "1"),
         "HICACHE_SIZE": os.getenv("HICACHE_SIZE", "64"),
     }
 )
-ENABLE_HICACHE = os.getenv("HICACHE", "0") == "1"
+# Both defaults must flip TOGETHER (the run4 lesson, re-learned in run5
+# planning): the secret default was bumped to "1" while this line still said
+# "0", which would ship HICACHE=1 into a container that boots WITHOUT
+# hicache. Keep them identical, always.
+ENABLE_HICACHE = os.getenv("HICACHE", "1") == "1"
 # hicache_size is PER-RANK under DCP: attempt2 booted 512 GB x 8 ranks =
 # 4 TB aggregate on the 1 TiB host and never went healthy.  64 x 8 = 512
 # GiB aggregate is the intended total, with headroom for load buffers.
@@ -166,8 +187,8 @@ def build_server_cmd(port):
         str(port),
         "--tp",  # use all GPUs to split up tensor-parallel operations
         str(N_GPUS),
-        "--cuda-graph-max-bs",  # only capture CUDA graphs for likely batch sizes
-        str(CUDA_GRAPH_MAX_BS),
+        "--cuda-graph-max-bs-decode",  # nightly split --cuda-graph-max-bs into
+        str(CUDA_GRAPH_MAX_BS),  # -decode/-prefill; we capture decode graphs only
         "--enable-metrics",  # expose metrics endpoints for telemetry
         "--enable-cache-report",  # usage carries cached_tokens for AIPerf
         "--decode-log-interval",  # how often to log during decoding, in tokens
@@ -175,7 +196,9 @@ def build_server_cmd(port):
     ]
     if ENABLE_HICACHE:
         cmd += ["--enable-hierarchical-cache", "--hicache-size", HICACHE_SIZE_GIB]
-    flag_groups = (SERVER_ARGS, {} if ENABLE_HICACHE else speculative_config)
+    # DSPARK ships with HiCache in the pinned image (#35221); no more
+    # dropping the spec config in HICACHE mode.
+    flag_groups = (SERVER_ARGS, speculative_config)
     for flags in flag_groups:
         for key, value in flags.items():
             cmd.append("--" + key.removeprefix("--"))
@@ -220,6 +243,55 @@ def warmup():
         requests.post(
             f"http://127.0.0.1:{PORT}/v1/chat/completions", json=payload, timeout=10
         ).raise_for_status()
+
+
+def _find_key(obj, key):
+    """Depth-first search for `key` in nested JSON (get_server_info wraps
+    args differently across SGLang versions; don't guess the layout)."""
+    if isinstance(obj, dict):
+        if key in obj:
+            return obj[key]
+        for v in obj.values():
+            found = _find_key(v, key)
+            if found is not None:
+                return found
+    elif isinstance(obj, list):
+        for v in obj:
+            found = _find_key(v, key)
+            if found is not None:
+                return found
+    return None
+
+
+def check_boot_shape():
+    """Fail the boot LOUDLY if the engine didn't come up in the intended shape.
+
+    The argv says DSPARK/HiCache, but scheduler-side gates can still disable
+    either after parse (an incompatibility we didn't anticipate). The argv
+    check cannot see that; ask the engine what actually initialized, and
+    print the shape for container logs.  Verifies DSPARK is really serving
+    on the endpoint, not merely requested.
+    """
+    import requests
+
+    info = requests.get(f"http://127.0.0.1:{PORT}/get_server_info", timeout=10).json()
+    shape = {
+        "speculative_algorithm": _find_key(info, "speculative_algorithm"),
+        "enable_hierarchical_cache": _find_key(info, "enable_hierarchical_cache"),
+        "mem_fraction_static": _find_key(info, "mem_fraction_static"),
+        "max_total_num_tokens": _find_key(info, "max_total_num_tokens"),
+    }
+    print(f"[boot] engine shape: {json.dumps(shape)}", flush=True)
+    if shape["speculative_algorithm"] != "DSPARK":
+        raise RuntimeError(
+            f"endpoint must serve with DSPARK; engine reports "
+            f"{shape['speculative_algorithm']!r}"
+        )
+    if ENABLE_HICACHE and not shape["enable_hierarchical_cache"]:
+        raise RuntimeError("expected hierarchical cache enabled; engine reports disabled")
+    if not ENABLE_HICACHE and shape["enable_hierarchical_cache"]:
+        raise RuntimeError("HICACHE=0 but engine booted hierarchical cache; "
+                           "the deploy-time/container decision diverged")
 
 
 # ## The server
@@ -307,6 +379,7 @@ class SGLang:
         # app page live during the ~15-min weight load.
         self.process = subprocess.Popen(cmd, env=os.environ, stderr=subprocess.STDOUT)
         wait_ready(self.process)
+        check_boot_shape()
         warmup()
 
     @modal.exit()
