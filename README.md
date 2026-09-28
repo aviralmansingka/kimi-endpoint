@@ -23,12 +23,6 @@ run3 baseline (900 s window, no HiCache). Pricing $3/$0.30/$15 per Mtok, node po
 | Output throughput D | 174.5 tok/s | 411.3 tok/s |
 | Errors | 0.0% | 0.0% |
 
-HiCache bought latency, not revenue: output throughput rose 2.36× and p95 TTFT
-fell ~92%, but earnings stayed flat (−0.45%) — far more input was served at the
-lower cached-token price. Different profiling windows (900 s vs 3,600 s) mean
-this is not an isolated HiCache-only causal estimate. Historical reports
-record the pre-update 11.2 kW figures ($60M/MW-year class).
-
 ## How earnings per MW are estimated
 
 `earnings.py` turns measured token usage into estimated gross revenue at chosen
