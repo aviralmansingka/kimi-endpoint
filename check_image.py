@@ -18,11 +18,12 @@ _check_image = sglang_image.add_local_python_source("serve")
 
 @check.function(image=_check_image, timeout=20 * 60)
 def revision():
-    SERVER_ARGS = "/sgl-workspace/sglang/python/sglang/srt/server_args.py"
-    ASSEMBLER = (
-        "/sgl-workspace/sglang/python/sglang/srt/mem_cache/"
-        "hybrid_cache/hybrid_pool_assembler.py"
-    )
+    SRT = "/sgl-workspace/sglang/python/sglang/srt"
+    SERVER_ARGS = f"{SRT}/server_args.py"  # legacy layout; hicache args MOVED
+    HICACHE_HOOK = f"{SRT}/arg_groups/hicache_hook.py"  # new arg-group home
+    KV_HOOK = f"{SRT}/arg_groups/kv_cache_hook.py"
+    ASSEMBLER = f"{SRT}/mem_cache/hybrid_cache/hybrid_pool_assembler.py"
+    LOADER = f"{SRT}/model_loader/loader.py"
 
     def run(cmd):
         r = subprocess.run(cmd, capture_output=True, text=True)
@@ -38,19 +39,19 @@ def revision():
     run(["git", "-C", "/sgl-workspace/sglang", "log", "--oneline", "-5"])
     run(["python", "-c",
          "import importlib.metadata as m; print(m.version('sglang'))"])
-    # PR #35221 territory: DCP+HiCache+DSPARK draft host-pool sizing.
-    run(["grep", "-rn", "-A30", "hicache_dcp", SERVER_ARGS])
-    run(["grep", "-rn", "draft", ASSEMBLER])
-    # Required HiCache flags must exist in this build.
-    run(["grep", "-n", "hicache-size\\|hicache-write-policy\\|"
-         "hicache-io-backend\\|hicache-mem-layout", SERVER_ARGS])
+    # The nightly moved hicache args from server_args.py to arg_groups/.
+    run(["grep", "-n", "-iE", "hicache|hierarchical|dcp|dspark", HICACHE_HOOK])
+    run(["grep", "-n", "-iE", "dcp|draft", ASSEMBLER])
 
     gates = [
-        ("hicache_dcp (#35221 draft host-pool DCP sizing)",
-         SERVER_ARGS, "hicache_dcp"),
-        ("draft pool handling in hybrid_pool_assembler", ASSEMBLER, "draft"),
-        ("hicache-size flag", SERVER_ARGS, "hicache-size"),
-        ("hicache-mem-layout flag", SERVER_ARGS, "hicache-mem-layout"),
+        ("hicache arg-group exists (new layout)",
+         HICACHE_HOOK, "resolve_hicache_dcp_compatibility"),
+        ("DSPARK allowed with HiCache+DCP (#35221)",
+         HICACHE_HOOK, "only supports DSPARK"),
+        ("DCP index translation in assembler", ASSEMBLER, "dcp_rank"),
+        ("enable-hierarchical-cache flag still exists",
+         KV_HOOK, "enable-hierarchical-cache"),
+        ("NVFP4 checkpoint loading (#3507)", LOADER, "nvfp4"),
     ]
     missing = [name for name, path, pattern in gates if not found(path, pattern)]
     if missing:
