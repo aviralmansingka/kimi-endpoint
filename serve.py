@@ -134,7 +134,9 @@ ROUTING_REGION = "us-west"
 MIN_CONTAINERS = int(os.getenv("MIN_CONTAINERS", "0"))  # 1 = always warm
 TARGET_INPUTS = 32
 CUDA_GRAPH_MAX_BS = 32  # Align graph capture with the Modal concurrency target.
-STARTUP_TIMEOUT = 90 * MINUTES  # first boot loads ~1.6 TB from the Volume
+STARTUP_TIMEOUT = 150 * MINUTES  # first boot loads ~1.6 TB from the Volume;
+# cold-region boots measured ~83 min of shard loading alone (run5, 52s/shard
+# x 96), so 90 min killed healthy boots server-side — raise only with reason
 
 # HiCache (L2 host-memory KV offload).  DEFAULT ON as of run5 planning:
 # run3's eviction thrash (one ~150k-token context destroyed every ~2.4s,
