@@ -8,10 +8,11 @@ from analyze_chatdist import (
 )
 from bench_grid import Corpus, build_body, cell_shape, turn_suffix
 
-# revenue model
+# revenue model (NODE_KW corrected 11.2 -> 14.5 kW: full system draw,
+# not GPU TDP alone; required rates re-derive from the same $100M target)
 assert round(blended_price(50, 0.95), 6) == 36.75
-assert round(NODE_USD_PER_HR, 2) == 127.85
-assert round(required_out_tps(36.75, 0.7)) == 1381
+assert round(NODE_USD_PER_HR, 2) == 165.53
+assert round(required_out_tps(36.75, 0.7)) == 1787
 
 # session shape hits the 50:1 mix at the target cache share
 assert cell_shape(0.0, 50, 336, 300) == (1, 16500)
