@@ -9,9 +9,16 @@ corpus.jsonl
 results.json
 download.log
 tok/.cache/
-artifacts/bench-*/
 
-# Large raw benchmark exports (summaries/reports are committed)
-artifacts/**/profile_export_raw.jsonl
-artifacts/**/profile_export.jsonl
-artifacts/**/logs/
+# Benchmark run outputs (all regenerable; summaries/reports are committed
+# separately)
+artifacts/
+
+# HuggingFace local caches (model weights, xet chunks, remote-code modules)
+hub/
+xet/
+modules/
+
+# Skill-generated local artifacts
+.lavish/
+professor-lessons/
