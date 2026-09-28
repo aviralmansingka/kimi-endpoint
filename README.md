@@ -5,15 +5,113 @@ and measures **what it earns** at Kimi K3 OpenRouter prices
 ($3 fresh input / $0.30 cache read / $15 output per Mtok).  The
 $100M/MW-yr SemiAnalysis claim is context, not a pass/fail bar.
 
-## The model (one screen)
+## How earnings per MW are estimated
 
-    earn/hr while serving = 3600/1e6 · (P_IN·P + P_CACHE·C + P_OUT·D)  # tok/s × $/Mtok
-    earnings at usage u   = u · earn/hr · 8760 / (NODE_KW/1000)        # $/MW-yr
-    B                     = P_OUT + P_IN·R(1−c) + P_CACHE·R·c        # blended $/M out tok
+`earnings.py` turns measured token usage into estimated gross revenue at chosen
+prices, then scales it to one MW-year. It does not calculate profit or measure power.
+See [BENCHMARKS.md](BENCHMARKS.md) for running tests and [EXPERIMENT.md](EXPERIMENT.md)
+for the reported H100 results.
+
+### 1. Measured tokens → tokens/second
+
+Read `profile_export_aiperf.json`. These counters store run totals in `.avg`
+(despite the name):
+
+- `I`: `total_usage_prompt_tokens`, including cached input.
+- `H`: `total_usage_prompt_cache_read_tokens`, the reported cache-read subset.
+- `O`: `total_usage_completion_tokens`, including reported reasoning output.
+- `T`: `benchmark_duration`, the measured duration in seconds.
+
+```text
+P = (I − H) / T     fresh input tokens/s
+C = H / T           cached input tokens/s
+D = O / T           output tokens/s
+```
+
+`bench_agentic.py` delegates scheduling and metrics to AIPerf and requests server
+token counts. Use achieved throughput, not the offered request rate or token caps.
+Concurrency selects the load; it is not a multiplier on these aggregate rates.
+Native concurrency caps root sessions; DAG children can exceed that cap.
+Live tool-loop exports contain raw events, not the AIPerf summary used here.
+
+### 2. Elapsed time → GPU-hours
+
+For `G` GPUs allocated throughout the measured interval:
+
+```text
+GPU-hours = G × T / 3600
+```
+
+`G` comes from the deployment (1 for the H100 experiment; 8 for the B300 node),
+not concurrency. `earnings.py` does not calculate GPU-hours or need them for revenue;
+startup, idle time and extra replicas add to billable GPU-hours.
+
+### 3. Token rates × prices → dollars/hour
+
+```text
+$/hr serving = (P_IN × P + P_CACHE × C + P_OUT × D) × 3600 / 1,000,000
+```
+
+`P_IN`, `P_CACHE`, `P_OUT` are assumed dollars per million fresh, cached and output
+tokens. They are environment settings imported from `analyze_chatdist.py`:
+default Kimi prices are `$3 / $0.30 / $15`; the Qwen experiment uses
+`$0.048 / $0.0048 / $0.193`. These are pricing inputs, not measured receipts.
+
+The printed mix and blended price describe the same revenue when `O > 0`:
+
+```text
+R = I / O;  c = H / I                         input:output ratio; cached share
+B = P_OUT + P_IN × R × (1 − c) + P_CACHE × R × c
+$/hr serving = B × D × 3600 / 1,000,000
+```
+
+`R` and `c` come from usage, not the requested prefix/tail sizes; `B` is dollars
+per million output tokens, including the input revenue that accompanies them.
+
+### 4. Dollars/hour → dollars per MW-year
+
+```text
+$/MW-year = $/hr serving × U × 8760 / (NODE_KW / 1000)
+```
+
+`U` is an assumed usage factor (environment variable, default `0.7`), allowing for
+demand gaps, restarts and latency headroom. `8760` is hours/year; `1000` converts
+kW to MW. `NODE_KW` is assumed node power: default `11.2` (8 × 1.4 kW GPU TDP),
+or `0.7` in the H100 experiment. This is not wall-meter power or facility power;
+it excludes host/cooling overhead unless you include those in `NODE_KW`.
+Scaling assumes the measured operating point can be replicated across that MW.
+
+### Two small checks from EXPERIMENT.md
+
+The 2026-09-25 one-H100 smoke reported `$1.02/hr`. With its assumed power and usage:
+
+```text
+1.02 × 0.7 × 8760 / (0.7 / 1000) = $8,935,200/MW-year ≈ $8.9M/MW-year
+```
+
+A different walkthrough lacked cache reporting: `$10.83/hr` versus ~$2.6/hr corrected.
+
+```text
+10.83 / 2.6 ≈ 4.2× overstatement
+```
+
+The correction is an estimate, not a verified cache measurement. Missing cache
+usage is unknown: `earnings.py` substitutes `H=0`, billing all input as fresh.
+Enable server cache reporting and inspect the export; `--cache-report` alone
+cannot guarantee that AIPerf captures the fields.
+
+### What these numbers do not prove
+
+- Synthetic token sizes use chars/4 approximations: the experiment measured
+  `R=37` despite targeting `50`. Natural text can change throughput and caching.
+- Check errors and latency before treating throughput as sellable. The script
+  reports latency but does not impose a pass/fail bar or subtract operating costs.
+- BENCHMARKS.md verifies local mocked runs, not Kimi-on-Modal performance.
+  The H100 smoke is a separate reported measurement; annual earnings remain
+  extrapolations, not a verified year of revenue or proof of the $100M/MW-year claim.
 
 No pass/fail target: the goal is to measure what the node **earns** at a
-given utilization (`--u-report`, default 0.7).  B is just the price side —
-how much input revenue rides along with each output token sold.
+given utilization (`--u-report`, default 0.7).
 
 ## Commands
 
@@ -35,7 +133,7 @@ Optional — B measured straight from the raw chat logs:
 
     uv run --with tiktoken python analyze_chatdist.py
 
-## Reading the output: what we earn
+## Reading the output
 
 Each cell line prints the measured operating point (`D P C`, measured
 `c`/`R`, `B`, TTFT/ITL p95) and the earnings:
@@ -46,9 +144,6 @@ Each cell line prints the measured operating point (`D P C`, measured
               (.per_mw_yr_u/1e6*10|round/10)] | @tsv' results.json
     # columns: K, c_target, $/hr while serving, $M/MW-yr at --u-report
 
-- Earnings scale linearly with u: `$/MW-yr(u) = u · per_mw_yr_u1`.
-- `usd_per_hr` is the rate while the node is serving; `per_mw_yr_u` applies
-  the usage factor (demand gaps, restarts, SLO headroom).
 - The closing `frontier` table is the summary view: max SLO-feasible `D`
   per c column, with its earnings.
 - `SLO fail` means throughput at that concurrency isn't sellable at those
