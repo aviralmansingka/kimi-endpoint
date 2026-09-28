@@ -30,7 +30,7 @@ from tiktoken.load import load_tiktoken_bpe
 P_IN = float(os.getenv("P_IN", "3.00"))        # $/Mtok fresh input
 P_CACHE = float(os.getenv("P_CACHE", "0.30"))  # $/Mtok cache read
 P_OUT = float(os.getenv("P_OUT", "15.00"))     # $/Mtok output
-NODE_KW = float(os.getenv("NODE_KW", str(8 * 1400 / 1000)))  # TDP accounting
+NODE_KW = float(os.getenv("NODE_KW", "14.5"))  # 8×B300 node, TDP accounting
 TARGET_PER_MW_YR = 100e6                  # the SemiAnalysis claim under test
 NODE_USD_PER_HR = TARGET_PER_MW_YR * NODE_KW / 1000.0 / 8760.0
 

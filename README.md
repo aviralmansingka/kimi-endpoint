@@ -1,9 +1,33 @@
 # kimi-endpoint — $100M/MW-yr validation harness
 
-Serves Kimi-K3-NVFP4 on one 8×B300 Modal replica (11.2 kW at TDP accounting)
+Serves Kimi-K3-NVFP4 on one 8×B300 Modal replica (14.5 kW at TDP accounting)
 and measures **what it earns** at Kimi K3 OpenRouter prices
 ($3 fresh input / $0.30 cache read / $15 output per Mtok).  The
 $100M/MW-yr SemiAnalysis claim is context, not a pass/fail bar.
+
+## Measured results: run4 (HiCache on 8×B300)
+
+The most recent verified run (`artifacts/k3-agentx-run4/run4-report.md`, 2026-09-26,
+3,600 s window, `hicache_size=64` per rank, no speculative decoding) against the
+run3 baseline (900 s window, no HiCache). Pricing $3/$0.30/$15 per Mtok, node power
+14.5 kW, u=0.7; gross serving revenue, not profit.
+
+| Metric | Run3 baseline | Run4 HiCache |
+|---|---:|---:|
+| Earnings/hour | $110.91 | $110.41 |
+| $/MW-year at u=0.7 (14.5 kW) | $46.9M | $46.7M |
+| TTFT p50 / p95 | 2.5 / 40.8 s | 1.4 / 5.1 s |
+| ITL p90 | 91.6 ms | 43.6 ms |
+| Interactivity (1000/p90 ITL) | 10.9 tok/s/user | 22.9 tok/s/user |
+| Cache share c | 0.669 | 0.933 |
+| Output throughput D | 174.5 tok/s | 411.3 tok/s |
+| Errors | 0.0% | 0.0% |
+
+HiCache bought latency, not revenue: output throughput rose 2.36× and p95 TTFT
+fell ~92%, but earnings stayed flat (−0.45%) — far more input was served at the
+lower cached-token price. Different profiling windows (900 s vs 3,600 s) mean
+this is not an isolated HiCache-only causal estimate. Historical reports
+record the pre-update 11.2 kW figures ($60M/MW-year class).
 
 ## How earnings per MW are estimated
 
@@ -76,7 +100,8 @@ $/MW-year = $/hr serving × U × 8760 / (NODE_KW / 1000)
 
 `U` is an assumed usage factor (environment variable, default `0.7`), allowing for
 demand gaps, restarts and latency headroom. `8760` is hours/year; `1000` converts
-kW to MW. `NODE_KW` is assumed node power: default `11.2` (8 × 1.4 kW GPU TDP),
+kW to MW. `NODE_KW` is assumed node power: default `14.5` (8 × B300 node, TDP
+accounting),
 or `0.7` in the H100 experiment. This is not wall-meter power or facility power;
 it excludes host/cooling overhead unless you include those in `NODE_KW`.
 Scaling assumes the measured operating point can be replicated across that MW.
