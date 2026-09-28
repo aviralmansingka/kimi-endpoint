@@ -380,7 +380,7 @@ class SGLang:
         # is no pipe backpressure. This keeps `modal container logs` and the
         # app page live during the ~15-min weight load.
         self.process = subprocess.Popen(cmd, env=os.environ, stderr=subprocess.STDOUT)
-        wait_ready(self.process)
+        wait_ready(self.process, timeout=STARTUP_TIMEOUT)
         check_boot_shape()
         warmup()
 
