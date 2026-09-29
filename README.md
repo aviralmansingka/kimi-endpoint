@@ -1,6 +1,7 @@
 # kimi-endpoint — $100M/MW-yr validation harness
 
-Serves Kimi-K3-NVFP4 on one 8×B300 Modal replica (14.5 kW at TDP accounting)
+Serves Kimi-K3-NVFP4 on one 8×B300 Modal replica (17 kW all-in, ~2.12 kW/GPU
+— the SemiAnalysis/InferenceX power basis)
 and measures **what it earns** at Kimi K3 OpenRouter prices
 ($3 fresh input / $0.30 cache read / $15 output per Mtok).  The
 $100M/MW-yr SemiAnalysis claim is context, not a pass/fail bar.
@@ -12,16 +13,17 @@ Three verified runs: run3 baseline (900 s window, no HiCache), run4 HiCache
 `hicache_size=64` per rank, no speculative decoding), and run5 HiCache+DSPARK
 (`artifacts/k3-agentx-run5/attempt7-analysis.md`, 2026-09-28, 900 s window,
 combined via pinned nightly `dev-cu13-20260928-81f27fb3`). Pricing
-$3/$0.30/$15 per Mtok, node power 14.5 kW, u=0.7; gross serving revenue, not
-profit. Profit rows assume 8 GPUs × $4/GPU-hour billed 8,760 h/yr
+$3/$0.30/$15 per Mtok, node power 17 kW all-in (2.12 kW/GPU, matching the
+SemiAnalysis basis — host, NICs, cooling share), u=0.7; gross serving revenue,
+not profit. Profit rows assume 8 GPUs × $4/GPU-hour billed 8,760 h/yr
 (always-on) against the u=0.7 revenue.
 
 | Metric | Run3 baseline (900 s) | Run4 HiCache (3,600 s) | Run5 HiCache+DSPARK (900 s) |
 |---|---:|---:|---:|
 | Earnings/hour | $110.91 | $110.41 | $80.94 |
-| $/MW-year at u=0.7 (14.5 kW) | $46.9M | $46.7M | $34.2M |
+| $/MW-year at u=0.7 (17 kW all-in) | $40.0M | $39.8M | $29.2M |
 | Profit/hour @ $4/GPU-hour | $45.63 | $45.28 | $24.65 |
-| Profit $/MW-year @u0.7, $4/GPU-hour | $27.6M | $27.4M | $14.9M |
+| Profit $/MW-year @u0.7, $4/GPU-hour | $23.5M | $23.3M | $12.7M |
 | TTFT p50 / p95 | 2.5 / 40.8 s | 1.4 / 5.1 s | 1.4 / 3.5 s |
 | ITL p90 | 91.6 ms | 43.6 ms | 48.4 ms |
 | Interactivity (1000/p90 ITL) | 10.9 tok/s/user | 22.9 tok/s/user | 20.6 tok/s/user |
@@ -101,8 +103,9 @@ $/MW-year = $/hr serving × U × 8760 / (NODE_KW / 1000)
 
 `U` is an assumed usage factor (environment variable, default `0.7`), allowing for
 demand gaps, restarts and latency headroom. `8760` is hours/year; `1000` converts
-kW to MW. `NODE_KW` is assumed node power: default `14.5` (8 × B300 node, TDP
-accounting),
+kW to MW. `NODE_KW` is assumed node power: default `17.0` (8 × B300 all-in,
+2.12 kW/GPU — the SemiAnalysis/InferenceX basis, including host, NICs, and
+cooling share),
 or `0.7` in the H100 experiment. This is not wall-meter power or facility power;
 it excludes host/cooling overhead unless you include those in `NODE_KW`.
 Scaling assumes the measured operating point can be replicated across that MW.
@@ -177,8 +180,10 @@ factor do most of the work.
   answer moves linearly with the output price.
 - **Usage factor u = 0.7.** Demand gaps, restarts, and SLO headroom; a pure
   linear multiplier on the annual figure.
-- **Node power 14.5 kW at TDP.** Excludes host and cooling overhead; not
-  wall-metered.
+- **Node power 17 kW all-in** (2.12 kW/GPU, the SemiAnalysis/InferenceX
+  basis: GPU TDP + host CPU, NICs, cooling share). Excludes facility PUE;
+  not wall-metered. Earlier reports used 14.5 kW TDP-only (gross figures
+  ~15% higher on that basis).
 - **Gross revenue, not profit.** No operating or GPU cost is subtracted;
   compute cost appears only in the run cost ledgers ($56.80/node-hour,
   a Modal estimate, not an invoice).
