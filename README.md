@@ -5,23 +5,33 @@ and measures **what it earns** at Kimi K3 OpenRouter prices
 ($3 fresh input / $0.30 cache read / $15 output per Mtok).  The
 $100M/MW-yr SemiAnalysis claim is context, not a pass/fail bar.
 
-## Measured results: run4 (HiCache on 8×B300)
+## Measured results (8×B300)
 
-The most recent verified run (`artifacts/k3-agentx-run4/run4-report.md`, 2026-09-26,
-3,600 s window, `hicache_size=64` per rank, no speculative decoding) against the
-run3 baseline (900 s window, no HiCache). Pricing $3/$0.30/$15 per Mtok, node power
-14.5 kW, u=0.7; gross serving revenue, not profit.
+Three verified runs: run3 baseline (900 s window, no HiCache), run4 HiCache
+(`artifacts/k3-agentx-run4/run4-report.md`, 2026-09-26, 3,600 s window,
+`hicache_size=64` per rank, no speculative decoding), and run5 HiCache+DSPARK
+(`artifacts/k3-agentx-run5/attempt7-analysis.md`, 2026-09-28, 900 s window,
+combined via pinned nightly `dev-cu13-20260928-81f27fb3`). Pricing
+$3/$0.30/$15 per Mtok, node power 14.5 kW, u=0.7; gross serving revenue, not
+profit.
 
-| Metric | Run3 baseline | Run4 HiCache |
-|---|---:|---:|
-| Earnings/hour | $110.91 | $110.41 |
-| $/MW-year at u=0.7 (14.5 kW) | $46.9M | $46.7M |
-| TTFT p50 / p95 | 2.5 / 40.8 s | 1.4 / 5.1 s |
-| ITL p90 | 91.6 ms | 43.6 ms |
-| Interactivity (1000/p90 ITL) | 10.9 tok/s/user | 22.9 tok/s/user |
-| Cache share c | 0.669 | 0.933 |
-| Output throughput D | 174.5 tok/s | 411.3 tok/s |
-| Errors | 0.0% | 0.0% |
+| Metric | Run3 baseline (900 s) | Run4 HiCache (3,600 s) | Run5 HiCache+DSPARK (900 s) |
+|---|---:|---:|---:|
+| Earnings/hour | $110.91 | $110.41 | $80.94 |
+| $/MW-year at u=0.7 (14.5 kW) | $46.9M | $46.7M | $34.2M |
+| TTFT p50 / p95 | 2.5 / 40.8 s | 1.4 / 5.1 s | 1.4 / 3.5 s |
+| ITL p90 | 91.6 ms | 43.6 ms | 48.4 ms |
+| Interactivity (1000/p90 ITL) | 10.9 tok/s/user | 22.9 tok/s/user | 20.6 tok/s/user |
+| Cache share c | 0.669 | 0.933 | 0.942 |
+| Output throughput D | 174.5 tok/s | 411.3 tok/s | 330.1 tok/s |
+| DSPARK accept rate / length | — | — | 15.6% / 2.09 |
+| Errors | 0.0% | 0.0% | 0.3% |
+
+Run5 is the like-for-like comparison against run3 (same 900 s window): TTFT
+p95 falls ~91% and ITL p90 halves. DSPARK at block size 7 was roughly
+break-even: throughput rose via multi-token emission on accepted drafts, but
+ITL p90 ran ~11% above the HiCache-only run4. Run4's 3,600 s window had far
+more cache warm-up, so its D is not comparable to 900 s windows.
 
 ## How earnings per MW are estimated
 
