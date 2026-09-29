@@ -27,12 +27,6 @@ profit.
 | DSPARK accept rate / length | — | — | 15.6% / 2.09 |
 | Errors | 0.0% | 0.0% | 0.3% |
 
-Run5 is the like-for-like comparison against run3 (same 900 s window): TTFT
-p95 falls ~91% and ITL p90 halves. DSPARK at block size 7 was roughly
-break-even: throughput rose via multi-token emission on accepted drafts, but
-ITL p90 ran ~11% above the HiCache-only run4. Run4's 3,600 s window had far
-more cache warm-up, so its D is not comparable to 900 s windows.
-
 ## How earnings per MW are estimated
 
 `earnings.py` turns measured token usage into estimated gross revenue at chosen
