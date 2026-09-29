@@ -13,12 +13,15 @@ Three verified runs: run3 baseline (900 s window, no HiCache), run4 HiCache
 (`artifacts/k3-agentx-run5/attempt7-analysis.md`, 2026-09-28, 900 s window,
 combined via pinned nightly `dev-cu13-20260928-81f27fb3`). Pricing
 $3/$0.30/$15 per Mtok, node power 14.5 kW, u=0.7; gross serving revenue, not
-profit.
+profit. Profit rows assume 8 GPUs × $4/GPU-hour billed 8,760 h/yr
+(always-on) against the u=0.7 revenue.
 
 | Metric | Run3 baseline (900 s) | Run4 HiCache (3,600 s) | Run5 HiCache+DSPARK (900 s) |
 |---|---:|---:|---:|
 | Earnings/hour | $110.91 | $110.41 | $80.94 |
 | $/MW-year at u=0.7 (14.5 kW) | $46.9M | $46.7M | $34.2M |
+| Profit/hour @ $4/GPU-hour | $45.63 | $45.28 | $24.65 |
+| Profit $/MW-year @u0.7, $4/GPU-hour | $27.6M | $27.4M | $14.9M |
 | TTFT p50 / p95 | 2.5 / 40.8 s | 1.4 / 5.1 s | 1.4 / 3.5 s |
 | ITL p90 | 91.6 ms | 43.6 ms | 48.4 ms |
 | Interactivity (1000/p90 ITL) | 10.9 tok/s/user | 22.9 tok/s/user | 20.6 tok/s/user |
