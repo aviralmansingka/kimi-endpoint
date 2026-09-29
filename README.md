@@ -156,22 +156,6 @@ Optional — B measured straight from the raw chat logs:
 
     uv run --with tiktoken python analyze_chatdist.py
 
-## Reading the output
-
-Each cell line prints the measured operating point (`D P C`, measured
-`c`/`R`, `B`, TTFT/ITL p95) and the earnings:
-`earn $X.XX/hr serving -> $Y.YM/MW-yr @u0.7`.
-
-    jq -r '.cells[] | select(.ok)
-           | [.k, .c_target, (.usd_per_hr*100|round/100),
-              (.per_mw_yr_u/1e6*10|round/10)] | @tsv' results.json
-    # columns: K, c_target, $/hr while serving, $M/MW-yr at --u-report
-
-- The closing `frontier` table is the summary view: max SLO-feasible `D`
-  per c column, with its earnings.
-- `SLO fail` means throughput at that concurrency isn't sellable at those
-  latencies, whatever the token rate.
-
 ## Caveats
 
 - Keep `--ks` ≤ 64 unless `cuda-graph-max-bs` is raised in `serve.py`.
@@ -179,3 +163,27 @@ Each cell line prints the measured operating point (`D P C`, measured
   a server-side cross-check needs SGLang's cache report enabled.
 - Your own pi usage keeps growing the session logs — rebuild
   `corpus.jsonl` occasionally if you want the mix to track your habits.
+
+## Assumptions
+
+Every $/MW-year figure inherits all of these; the prices and the usage
+factor do most of the work.
+
+- **Prices are inputs, not receipts.** $3 fresh / $0.30 cached / $15 output
+  per Mtok (Kimi K3 OpenRouter); env-overridable. Revenue ≈ B × D, so the
+  answer moves linearly with the output price.
+- **Usage factor u = 0.7.** Demand gaps, restarts, and SLO headroom; a pure
+  linear multiplier on the annual figure.
+- **Node power 14.5 kW at TDP.** Excludes host and cooling overhead; not
+  wall-metered.
+- **Gross revenue, not profit.** No operating or GPU cost is subtracted;
+  compute cost appears only in the run cost ledgers ($56.80/node-hour,
+  a Modal estimate, not an invoice).
+- **Achieved throughput is sellable.** Latency is reported but no pass/fail
+  bar removes unsellable operating points.
+- **Scale replication.** A MW-year assumes the measured operating point —
+  and the demand to fill it — replicates for 8,760 hours at constant prices.
+- **Token accounting.** Server-reported counts; missing cache data bills all
+  input as fresh (H=0), which overstated one walkthrough 4.2×.
+- **Synthetic token sizes.** chars/4 approximations; measured R drifted from
+  the 50 target to 37, and natural text shifts mix and caching.
